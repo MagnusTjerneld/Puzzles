@@ -269,16 +269,16 @@ function rulesHtml() {
     if (i !== q0 && (r === 1 || c === 3 || G[i] === G[q0] || (Math.abs(r - 1) <= 1 && Math.abs(c - 3) <= 1))) blocked.push(i);
   }
   const one = (m) => mini(Object.assign({ n: 1, grid: [5] }, m));
-  const card = Grid.card;
+  const card = Rules.card;
   return [
     card('01', 'The goal', 'Place one queen in every row, every column and every colour region. A board with five rows has five queens.',
-      B({ q: [at(0, 1), at(1, 3), at(2, 0), at(3, 2), at(4, 4)], done: true, label: 'A solved board' }), Grid.RIGHT),
+      B({ q: [at(0, 1), at(1, 3), at(2, 0), at(3, 2), at(4, 4)], done: true, label: 'A solved board' }), Rules.RIGHT),
     card('02', 'One per row and column', 'Two queens may never share a row, and never share a column.',
-      B({ q: [at(0, 1), at(0, 4)], bad: [at(0, 1), at(0, 4)], label: 'Two queens in the same row' }), Grid.WRONG),
+      B({ q: [at(0, 1), at(0, 4)], bad: [at(0, 1), at(0, 4)], label: 'Two queens in the same row' }), Rules.WRONG),
     card('03', 'One per colour region', 'Every coloured region has exactly one queen, however big it is.',
-      B({ q: [at(1, 0), at(2, 2)], bad: [at(1, 0), at(2, 2)], label: 'Two queens in the same region' }), Grid.WRONG),
+      B({ q: [at(1, 0), at(2, 2)], bad: [at(1, 0), at(2, 2)], label: 'Two queens in the same region' }), Rules.WRONG),
     card('04', 'Queens may not touch', 'Not even diagonally. The eight cells around a queen are always empty.',
-      B({ q: [at(3, 2), at(4, 3)], bad: [at(3, 2), at(4, 3)], label: 'Two queens touching diagonally' }), Grid.WRONG),
+      B({ q: [at(3, 2), at(4, 3)], bad: [at(3, 2), at(4, 3)], label: 'Two queens touching diagonally' }), Rules.WRONG),
     `<section class="rule col"><div><h3><span class="n">05</span>How to mark</h3><p>Tap a cell to cycle through cross, queen and empty.</p></div>
       <div class="taps"><div>${one({ x: [0] })}1 tap<br>cross</div><div>${one({ q: [0] })}2 taps<br>queen</div><div>${one({})}3 taps<br>empty</div></div>
       <p><b>Press and drag</b> across several cells to cross them all at once, in any direction. Queens are left alone. Start on a cross to erase crosses instead.</p>

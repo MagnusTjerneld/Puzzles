@@ -1,0 +1,131 @@
+/* Jugz: the board is a square of dusk with the vessels on a shelf and the goal across the top.
+   Three skins (water, wine, beer) redefine the same tokens; the switch is hidden (three taps on the wordmark).
+   The token names still say "water" on purpose: a skin redefines them, it does not rename them. */
+body[data-game="jugz"] {
+  --night: #171331;       /* deepest dusk */
+  --indigo: #241E44;      /* middle of the backdrop */
+  --horizon: #4A3A78;     /* pale violet at the horizon */
+  --water-hi: #6FE7D4;    /* turquoise water, surface */
+  --water-lo: #2FB7A6;    /* turquoise water, depth */
+  --foam: #D8FFF6;        /* wave foam */
+  --chalk: #F3EFFF;       /* text on the board, lavender white */
+  --haze: #A79FC9;        /* secondary text on the board */
+  --hint: #FFB458;        /* the hint flash on the vessel */
+  --gold: #FFCE7A;        /* goal reached */
+  --glass: rgba(240,238,255,.60);  /* vessel outline */
+  --tint: rgba(243,239,255,.07);   /* glass body */
+  --etch: rgba(243,239,255,.62);   /* capacity engraved on the vessel */
+  --etch-dark: rgba(64,58,52,.72); /* ... and how hard the liquid bites into it */
+  /* The live amount, in the colour of the liquid itself: it shares a line of sight with the etched capacity,
+     and two numbers in the same lavender white were read for each other. */
+  --amount: #6FE7D4;
+}
+/* Winez: red wine in stemware, measured in U. */
+body[data-game="jugz"][data-skin="wine"] {
+  --night: #150610; --indigo: #2C0D1D; --horizon: #63213F;
+  --water-hi: #B32744; --water-lo: #59091F; --foam: #F0A8B8;
+  --chalk: #F9EDF1; --haze: #BE9AA8; --hint: #FFC46A; --gold: #FFD79A;
+  --glass: rgba(255,244,248,.55); --tint: rgba(255,240,246,.06); --etch: rgba(255,240,246,.62);
+  /* Red wine is the one dark liquid: darkening the mark into it would push it towards the backdrop, so barely. */
+  --etch-dark: rgba(60,40,48,.22);
+  /* Ruby disappears into the burgundy, so the amount borrows the meniscus rose. */
+  --amount: #F0A8B8;
+}
+/* Beerz: a German stein of lager, measured in S for Seidel. */
+body[data-game="jugz"][data-skin="beer"] {
+  --night: #140C05; --indigo: #2A1A0B; --horizon: #6B4116;
+  --water-hi: #F5C242; --water-lo: #A85E10; --foam: #FFF6E4;
+  --chalk: #FBF3E6; --haze: #BFA983;
+  /* Cold on purpose: the one cue that must never be mistaken for beer. */
+  --hint: #7ED8FF;
+  /* Beer is gold already, so the goal state moves up into the pale, foam-lit cream instead. */
+  --gold: #FFF3C0;
+  --glass: rgba(255,248,235,.62); --tint: rgba(255,245,225,.07); --etch: rgba(255,245,225,.62);
+  --etch-dark: rgba(58,48,38,.78); --amount: #F5C242;
+}
+
+[data-for="jugz"] { line-height: 1.2; border-radius: 10px; }
+.jz { position: relative; overflow: hidden; border-radius: 10px; display: flex; flex-direction: column; color: var(--chalk); container-type: inline-size;
+  background: radial-gradient(130% 90% at 50% -10%, var(--horizon) 0%, var(--indigo) 45%, var(--night) 100%); }
+/* Text on the board scales with the board (cqw), which is as small as 216 px on a small phone held sideways. */
+.jz-goal { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: clamp(8px, 3.5cqw, 12px) clamp(10px, 4cqw, 14px) 0; position: relative; z-index: 2; }
+.jz-goal .g-text { font-size: clamp(11px, 4.3cqw, 15px); color: var(--haze); line-height: 1.25; }
+.jz-goal .g-text b { font-size: clamp(14px, 6cqw, 21px); font-weight: 700; color: var(--water-hi); white-space: nowrap; }
+/* The wordmark: a tiny brand in the corner, and the hidden skin switch (three taps). The ::after is the hit area:
+   the text is small, and aiming at a logo that size on a phone mostly misses. */
+.jz-mark { position: relative; display: flex; align-items: baseline; gap: 5px; touch-action: manipulation; flex: 0 0 auto; }
+.jz-mark::after { content: ''; position: absolute; inset: -14px -14px; }
+.jz-mark > * { pointer-events: none; }
+.jz-mark b { font-size: 15px; font-weight: 700; letter-spacing: .01em;
+  background: linear-gradient(180deg, var(--foam), var(--water-hi)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.droplet { width: 8px; height: 8px; border-radius: 0 50% 50% 50%; transform: rotate(45deg) translateY(-3px);
+  background: linear-gradient(135deg, var(--foam), var(--water-hi)); transition: transform .5s cubic-bezier(.5,1.6,.5,1); }
+/* The droplet turns with the skin: it pours over into the wine and comes up round as a bubble of foam in the beer. */
+body[data-skin="wine"] .droplet { transform: rotate(225deg) translateY(-3px); }
+body[data-skin="beer"] .droplet { border-radius: 50%; transform: rotate(405deg) translateY(-3px); }
+.droplet.ping { animation: ping .3s ease; }
+/* On a small board the word goes and the droplet stays: it is still the switch. */
+@container (max-width: 279px) { .jz-mark b { display: none; } }
+@keyframes ping { 50% { filter: brightness(1.8) drop-shadow(0 0 7px var(--foam)); } }
+
+.shelf { flex: 1; display: flex; align-items: flex-end; justify-content: center; gap: 8px; padding: 0 8px 12px; }
+.jug { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; user-select: none; transition: transform .15s; -webkit-tap-highlight-color: transparent; }
+.jug:active { transform: scale(.97); }
+.jug .amt { font: 700 clamp(12px, 4.8cqw, 17px) var(--display); color: var(--amount); line-height: 1; }
+.jug svg { overflow: visible; filter: drop-shadow(0 18px 16px rgba(10,6,30,.55)); }
+.jug .glassbody { fill: none; stroke: var(--glass); stroke-width: 2.5; transition: stroke .2s, filter .2s; }
+.jug .glasshandle { fill: none; stroke: var(--glass); stroke-width: 7; stroke-linecap: round; transition: stroke .2s; }
+/* Stemware only: the stem is a closed shape so both edges are drawn, and the far half of the rim reads as an opening. */
+.jug .stemshape { fill: var(--tint); stroke: var(--glass); stroke-width: 2.2; stroke-linejoin: round; transition: stroke .2s; }
+.jug .rimback { fill: none; stroke: var(--glass); stroke-opacity: .45; stroke-width: 2; transition: stroke .2s; }
+/* The ring pressed round the neck of a stein, above the dimples. */
+.jug .glassband { fill: none; stroke: var(--glass); stroke-opacity: .75; stroke-width: 2.2; transition: stroke .2s; }
+.jug.sel .glassbody { stroke: #fff; stroke-width: 3.5; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--foam) 75%, transparent)); }
+.jug.sel .glasshandle, .jug.sel .stemshape, .jug.sel .rimback, .jug.sel .glassband { stroke: #fff; }
+.jug.hintflash .glassbody { stroke: var(--hint); stroke-width: 3.5; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--hint) 80%, transparent)); }
+.jug.hintflash .glasshandle, .jug.hintflash .stemshape, .jug.hintflash .rimback, .jug.hintflash .glassband { stroke: var(--hint); }
+.jug.hintflash { animation: hintpulse 1s ease-in-out 3; }
+@keyframes hintpulse { 50% { opacity: .55; } }
+/* The capacity is etched on the glass twice: a pale copy for the dark air above the liquid, and a multiply copy,
+   clipped to the liquid, that darkens whatever is under it (see etchSVG in vessels.js). */
+.jug .etch { fill: var(--etch); font-family: var(--display); font-weight: 600; pointer-events: none; }
+.jug .etchmul { fill: var(--etch-dark); mix-blend-mode: multiply; }
+.jug.deny { animation: shake .3s; }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.waterrect { transition: y .5s cubic-bezier(.4,0,.2,1), height .5s cubic-bezier(.4,0,.2,1); }
+.surfg { transition: transform .5s cubic-bezier(.4,0,.2,1), opacity .3s; }
+.waterbub { animation: bub var(--bd,5s) linear var(--bdl,0s) infinite; }
+@keyframes bub { to { transform: translateY(calc(-1 * var(--bh))); } }
+.wavedrift { animation: drift var(--wd,4.5s) linear infinite; }
+.wavedrift.rev { animation-duration: calc(var(--wd,4.5s) * 1.7); animation-direction: reverse; }
+@keyframes drift { to { transform: translateX(calc(-1 * var(--lam))); } }
+/* Wine legs: one run per pour, down the glass that was poured out of (see runLegs). */
+.leg { opacity: 0; }
+.legsg.legs .leg { animation: legfall var(--lg,5s) ease-in-out var(--ld,.45s) 1 both; }
+@keyframes legfall { 0% { transform: translateY(calc(-1 * var(--ls))); opacity: 0; } 14% { opacity: .5; } 80% { opacity: .18; } 100% { transform: translateY(0); opacity: 0; } }
+/* The stein's handle is a fistful of glass, not a jug's thumb loop. */
+body[data-skin="beer"] .jug .glasshandle { stroke-width: 9; }
+/* The head on a stein: it rides the beer line inside the surface group; a fresh pour makes it surge, and at rest it
+   breathes very slowly. transform-box puts the origin on the foam's bottom edge, so it grows up into the stein. */
+.headg { transform-box: fill-box; transform-origin: 50% 100%; }
+.headg.surge { animation: head 1.6s cubic-bezier(.25,.8,.3,1) both; }
+@keyframes head { from { transform: scaleY(1.65); } to { transform: scaleY(1); } }
+.headb { transform-box: fill-box; transform-origin: 50% 100%; animation: headbreath var(--hb,36s) ease-in-out infinite; }
+@keyframes headbreath { 50% { transform: scaleY(1.05); } }
+.foamhole { animation: foamhole var(--fd,28s) ease-in-out var(--fdl,0s) infinite; }
+@keyframes foamhole { 50% { opacity: .3; transform: translateY(-1.2px); } }
+
+/* The skin change: a circle of the incoming backdrop grows out of the droplet, the skin swaps underneath, it fades. */
+.jz-wipe { position: absolute; inset: 0; z-index: 3; pointer-events: none; clip-path: circle(0% at var(--ox,90%) var(--oy,6%)); }
+.jz-wipe.to-wine { background: radial-gradient(130% 90% at 50% -10%, #63213F 0%, #2C0D1D 45%, #150610 100%); }
+.jz-wipe.to-beer { background: radial-gradient(130% 90% at 50% -10%, #6B4116 0%, #2A1A0B 45%, #140C05 100%); }
+.jz-wipe.to-water { background: radial-gradient(130% 90% at 50% -10%, #4A3A78 0%, #241E44 45%, #171331 100%); }
+.jz-wipe.go { transition: clip-path .62s cubic-bezier(.4,0,.2,1); clip-path: circle(150% at var(--ox,90%) var(--oy,6%)); }
+.jz-wipe.fade { transition: opacity .45s ease; opacity: 0; }
+
+/* Rules pictures: flat jugs drawn with the same tokens. */
+body[data-game="jugz"] .rule .pic { width: 128px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .jz *, .waterrect, .surfg { transition: none !important; animation: none !important; }
+}

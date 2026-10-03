@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#121414"/>
+  <defs>
+    <radialGradient id="jzicon-bg" cx="50%" cy="-10%" r="120%"><stop offset="0" stop-color="#4A3A78"/><stop offset=".45" stop-color="#241E44"/><stop offset="1" stop-color="#171331"/></radialGradient>
+    <linearGradient id="jzicon-w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6FE7D4"/><stop offset="1" stop-color="#2FB7A6"/></linearGradient>
+  </defs>
+  <g transform="translate(116 116)">
+    <rect width="280" height="280" fill="url(#jzicon-bg)"/>
+    <g>
+      <path d="M40 72h70v150a12 12 0 0 1-12 12H52a12 12 0 0 1-12-12z" fill="rgba(243,239,255,.08)"/>
+      <path d="M41 150h68v72a11 11 0 0 1-11 11H52a11 11 0 0 1-11-11z" fill="url(#jzicon-w)"/>
+      <path d="M110 92c26 6 26 64 0 74" fill="none" stroke="rgba(240,238,255,.7)" stroke-width="9" stroke-linecap="round"/>
+      <path d="M40 72h70v150a12 12 0 0 1-12 12H52a12 12 0 0 1-12-12z" fill="none" stroke="rgba(240,238,255,.85)" stroke-width="6"/>
+    </g>
+    <g>
+      <path d="M146 128h54v94a12 12 0 0 1-12 12h-30a12 12 0 0 1-12-12z" fill="url(#jzicon-w)"/>
+      <path d="M146 128h54v94a12 12 0 0 1-12 12h-30a12 12 0 0 1-12-12z" fill="none" stroke="rgba(240,238,255,.85)" stroke-width="6"/>
+    </g>
+    <g>
+      <path d="M214 176h38v48a10 10 0 0 1-10 10h-18a10 10 0 0 1-10-10z" fill="rgba(243,239,255,.08)" stroke="rgba(240,238,255,.85)" stroke-width="6"/>
+    </g>
+    <g><rect width="280" height="280" fill="none" stroke="#c8ccc4" stroke-width="8"/></g>
+  </g>
+</svg>

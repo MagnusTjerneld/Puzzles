@@ -146,20 +146,20 @@ function mini(o) {
 function rulesHtml() {
   const row = (vals, extra) => mini(Object.assign({ rows: 1, cols: vals.length, vals }, extra));
   const one = (m) => mini({ rows: 1, cols: 1, vals: [m] });
-  const card = Grid.card;
+  const card = Rules.card;
   // A solved 4 x 4 board: sun = 0, moon = 1.
   const solved = [0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0];
   return [
     card('01', 'The goal', 'Fill the whole board with suns and moons, one symbol per cell. Cells filled from the start are locked. Every level has exactly one solution and can be solved by logic; you never need to guess.',
-      mini({ rows: 4, cols: 4, vals: solved, given: [0, 6, 9, 14], label: 'A solved board' }), Grid.RIGHT),
+      mini({ rows: 4, cols: 4, vals: solved, given: [0, 6, 9, 14], label: 'A solved board' }), Rules.RIGHT),
     card('02', 'At most two in a row', 'No more than two identical symbols may sit next to each other, across or down.',
-      row([0, 0, 0, 1, 1], { bad: [0, 1, 2], label: 'Three suns in a row' }), Grid.WRONG),
+      row([0, 0, 0, 1, 1], { bad: [0, 1, 2], label: 'Three suns in a row' }), Rules.WRONG),
     card('03', 'As many of each', 'Every row and column has as many suns as moons. On a board with six rows that is three of each.',
-      row([0, 1, 1, 0, 1, 0], { label: 'Three suns and three moons' }), Grid.RIGHT),
+      row([0, 1, 1, 0, 1, 0], { label: 'Three suns and three moons' }), Rules.RIGHT),
     card('04', 'Equals sign', 'Two cells with an <b>=</b> between them have the same symbol.',
-      row([1, 1], { edges: [{ r: 0, c: 0, dir: 'h', t: 1 }], label: 'Two moons with an equals sign' }), Grid.RIGHT),
+      row([1, 1], { edges: [{ r: 0, c: 0, dir: 'h', t: 1 }], label: 'Two moons with an equals sign' }), Rules.RIGHT),
     card('05', 'Cross', 'Two cells with a <b>×</b> between them have different symbols.',
-      row([0, 1], { edges: [{ r: 0, c: 0, dir: 'h', t: 2 }], label: 'A sun and a moon with a cross' }), Grid.RIGHT),
+      row([0, 1], { edges: [{ r: 0, c: 0, dir: 'h', t: 2 }], label: 'A sun and a moon with a cross' }), Rules.RIGHT),
     `<section class="rule col"><div><h3><span class="n">06</span>How to fill in</h3><p>Tap a cell to cycle through sun, moon and empty.</p></div>
       <div class="taps"><div>${one(0)}1 tap<br>sun</div><div>${one(1)}2 taps<br>moon</div><div>${one(-1)}3 taps<br>empty</div></div></section>`,
     card('07', 'Stuck? Tap Hint', 'Hint shows the next logical step. The stripes show why, the white frame shows the cell to change.',

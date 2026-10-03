@@ -9,8 +9,9 @@ const { execSync } = require('child_process');
 const root = path.join(__dirname, '..');
 const read = (...p) => fs.readFileSync(path.join(root, ...p), 'utf8');
 // The games, in hub order. Each folder holds engine.js, game.js, game.css, levels.json and logo.svg.
-const GAMES = ['queens', 'tango'];
-const DESCRIPTION = 'Logic puzzles for phone and browser: Queens and Tango. Plays offline.';
+// Any other .js in the folder (generate.js aside) is code for the page too, included before game.js.
+const GAMES = ['queens', 'tango', 'jugz'];
+const DESCRIPTION = 'Logic puzzles for phone and browser: Queens, Tango and Jugz. Plays offline.';
 
 let site = process.env.SITE_URL || '';
 if (site && !site.endsWith('/')) site += '/';
@@ -36,8 +37,11 @@ const gameJs = GAMES.map((g) => {
     __LEVELS__: JSON.stringify(levels),
     __LOGO__: JSON.stringify(read('games', g, 'logo.svg').trim()),
   });
+  const parts = fs.readdirSync(path.join(root, 'games', g))
+    .filter((f) => f.endsWith('.js') && !['engine.js', 'game.js', 'generate.js'].includes(f)).sort()
+    .map((f) => `// --- ${g}/${f} ---\n` + read('games', g, f));
   console.log(`${g}: ${levels.length} levels`);
-  return `// ===== ${g} =====\n;(function () {\nconst Engine = (function () {\nconst module = { exports: {} };\n${read('games', g, 'engine.js')}\nreturn module.exports;\n})();\n${body}\n})();`;
+  return `// ===== ${g} =====\n;(function () {\nconst Engine = (function () {\nconst module = { exports: {} };\n${read('games', g, 'engine.js')}\nreturn module.exports;\n})();\n${parts.join('\n')}\n${body}\n})();`;
 });
 const js = [read('src', 'shell', 'shell.js'), read('src', 'grid', 'grid.js'), ...gameJs, 'Puzzles.start();'].join('\n');
 

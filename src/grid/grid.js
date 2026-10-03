@@ -71,8 +71,4 @@ const Grid = {
     return h + '</svg>';
   },
 
-  // A rules card: number, title, text, picture on the left, optional verdict below the text.
-  card: (num, title, text, pic, extra) => `<section class="rule"><div class="pic">${pic}</div><div><h3><span class="n">${num}</span>${title}</h3><p>${text}</p>${extra || ''}</div></section>`,
-  WRONG: '<span class="verdict bad">Wrong</span>',
-  RIGHT: '<span class="verdict good">Right</span>',
 };

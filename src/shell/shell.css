@@ -59,6 +59,8 @@ h1, .clock { flex: 1 1 0; } /* equal columns: the clock stays put whatever the l
 .explain b { display: block; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 .win { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; }
 .win strong { font-size: 18px; color: var(--good); }
+.win .note { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+.win .note:empty { display: none; }
 .go { background: var(--accent); color: var(--on-accent); border: 0; border-radius: 999px; padding: 11px 20px; font-weight: 700; }
 
 .bar { display: flex; gap: 8px; margin-top: auto; padding-bottom: 6px; }
@@ -71,12 +73,15 @@ h1, .clock { flex: 1 1 0; } /* equal columns: the clock stays put whatever the l
 .picker section + section { margin-top: 16px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 0 14px; font: 400 12px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: var(--tc); }
-.t1 { --tc: var(--good); } .t2 { --tc: var(--accent); } .t3 { --tc: var(--bad); }
+.t1 { --tc: var(--good); } .t2 { --tc: #f0a93a; } .t3 { --tc: var(--bad); }
 .lv { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; }
 .lv button { background: var(--panel-2); border: 1px solid transparent; border-radius: 8px; padding: 8px 0; font: 400 13px var(--mono); font-variant-numeric: tabular-nums; }
 .lv button.t1, .lv button.t2, .lv button.t3 { border-bottom: 3px solid var(--tc); padding-bottom: 6px; }
 .lv button.solved { color: var(--good); border-color: #2f4a36; border-bottom-color: var(--tc, #2f4a36); }
 .lv button.now { background: var(--accent); color: var(--on-accent); font-weight: 500; }
+.lv button small { display: block; font-size: 9px; line-height: 1; height: 9px; margin-top: 3px; letter-spacing: 1px; color: var(--accent); }
+.lv button.now small { color: inherit; }
+.lv button.locked { opacity: .3; cursor: default; }
 
 /* Rules: a full-screen sheet with small drawn example boards. */
 .rules { position: fixed; inset: 0; z-index: 20; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch;

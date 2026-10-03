@@ -18,12 +18,18 @@
 //   started()                    has the player changed anything? (starts the clock)
 //   solved()
 //   status()                     { count: html, msg: text, bad: bool } for the status row while playing
-//   hint()                       sets the game's own highlight and returns { text }, or null
+//   hint()                       sets the game's own highlight and returns { text, label? }, or null; label defaults to "Why"
 //   clearHint()
 //   rulesHtml()
+// Optional:
+//   locked(level)                true if the level cannot be opened yet (the picker greys it out)
+//   badge(level)                 a short text under the level's number in the picker (e.g. stars)
+//   onSolved()                   called once when a level becomes solved, before the status row is drawn
+//   winNote()                    a line under "Solved in ..." (e.g. stars and the optimum)
 //
-// Progress is stored per game under "<id>.solved" ({ levelId: best seconds }), "<id>.cur" (level index)
-// and "<id>.rulesSeen", the same keys the standalone games used, so progress carried over when they moved in.
+// Progress is stored per game under "<id>.solved" ({ levelId: best seconds, or null when solved without a time }),
+// "<id>.cur" (level index) and "<id>.rulesSeen", the same keys the standalone games used, so progress carried over
+// when they moved in.
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -32,15 +38,25 @@ const store = {
 };
 const fmt = (s) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 
+// Building blocks for a game's rulesHtml(): a card with a number, title, text, a picture on the left and an
+// optional verdict under the text.
+const Rules = {
+  card: (num, title, text, pic, extra) => `<section class="rule"><div class="pic">${pic}</div><div><h3><span class="n">${num}</span>${title}</h3><p>${text}</p>${extra || ''}</div></section>`,
+  WRONG: '<span class="verdict bad">Wrong</span>',
+  RIGHT: '<span class="verdict good">Right</span>',
+};
+
 const Puzzles = (() => {
   const games = [], byId = {};
   let game = null;          // the game on screen (or last on screen, while the hub shows)
   let solvedMap = {}, idx = 0, lv = null;
-  let undoSt = [], redoSt = [], secs = 0, finished = false, hintText = '';
+  let undoSt = [], redoSt = [], secs = 0, finished = false, hintText = '', hintLabel = 'Why';
   let fromHub = false;      // this game was entered from a hub card, so the home button can go back in history
   let cardClicked = false;  // set by a card, read by the hash change it causes
 
   const key = (k) => game.id + '.' + k;
+  const isSolved = (id) => Object.prototype.hasOwnProperty.call(solvedMap, id);
+  const bestOf = (id) => (typeof solvedMap[id] === 'number' ? solvedMap[id] : null);
 
   function register(g) { games.push(g); byId[g.id] = g; }
 
@@ -70,17 +86,20 @@ const Puzzles = (() => {
     game.render();
     const ex = $('explain');
     ex.hidden = !hintText;
-    ex.innerHTML = hintText ? '<b>Why</b>' : '';
-    if (hintText) ex.appendChild(document.createTextNode(hintText));
+    ex.innerHTML = '';
+    if (hintText) { const b = document.createElement('b'); b.textContent = hintLabel; ex.append(b, hintText); }
+    const was = finished;
     finished = game.solved();
     game.ctx.board.classList.toggle('done', finished);
     const st = $('status');
     if (finished) {
-      const best = solvedMap[lv.id];
+      const best = bestOf(lv.id);
       if (best == null || secs < best) { solvedMap[lv.id] = secs; store.set(key('solved'), solvedMap); showBest(); }
+      if (!was) { if (game.onSolved) game.onSolved(); askPersist(); }
       const last = idx === game.levels.length - 1;
       store.set(key('cur'), last ? idx : idx + 1); // next time the game opens on the next level
-      st.innerHTML = `<div class="win"><strong>Solved in ${fmt(secs)}</strong>${last ? '' : '<button class="go" id="next" type="button">Next level</button>'}</div>`;
+      st.innerHTML = `<div class="win"><div><strong>Solved in ${fmt(secs)}</strong><small class="note" id="winNote"></small></div>${last ? '' : '<button class="go" id="next" type="button">Next level</button>'}</div>`;
+      $('winNote').textContent = game.winNote ? game.winNote() : '';
       const nx = $('next'); if (nx) nx.onclick = () => load(idx + 1);
     } else {
       const s = game.status();
@@ -91,7 +110,27 @@ const Puzzles = (() => {
     $('hint').disabled = finished;
   }
 
-  function showBest() { $('best').textContent = solvedMap[lv.id] != null ? 'Best ' + fmt(solvedMap[lv.id]) : ''; }
+  // localStorage is best effort: WebKit clears script-writable storage after seven days without interaction, and
+  // Chrome evicts origins under disk pressure. Persistent storage is exempt, so ask for it, but only once ten levels
+  // have been solved: early requests are denied more often, and Firefox shows them as a dialog nobody should meet on
+  // a first visit. A denial is normal (browsers decide by heuristics), so it only goes to console.debug.
+  let persistAsked = false;
+  async function askPersist() {
+    if (persistAsked) return;
+    const total = games.reduce((t, g) => t + Object.keys(store.get(g.id + '.solved', {})).length, 0);
+    if (total < 10) return;
+    persistAsked = true;
+    const st = navigator.storage;
+    if (!st || !st.persist) return;
+    try {
+      if (await st.persisted()) return;
+      // An explicit "denied" makes persist() a certain no. The permission name is unknown in some browsers and throws.
+      try { if ((await navigator.permissions.query({ name: 'persistent-storage' })).state === 'denied') return; } catch (e) {}
+      console.debug('Puzzles: persistent storage ' + ((await st.persist()) ? 'granted' : 'denied'));
+    } catch (e) {}
+  }
+
+  function showBest() { const b = bestOf(lv.id); $('best').textContent = b != null ? 'Best ' + fmt(b) : ''; }
 
   function setHeader() {
     $('title').firstChild.nodeValue = 'Level ' + lv.id;
@@ -102,7 +141,7 @@ const Puzzles = (() => {
 
   function load(i) {
     idx = i; lv = game.levels[i];
-    undoSt = []; redoSt = []; secs = 0; hintText = '';
+    undoSt = []; redoSt = []; secs = 0; hintText = ''; finished = false;
     store.set(key('cur'), i);
     game.load(lv);
     setHeader(); update(); closePicker();
@@ -123,11 +162,13 @@ const Puzzles = (() => {
       solvedMap = store.get(key('solved'), {});
       if (g.session) {
         // Back to a game left during this visit: pick up where it was, mid-level included.
-        ({ idx, undoSt, redoSt, secs } = g.session);
+        ({ idx, undoSt, redoSt, secs, finished } = g.session);
         lv = g.levels[idx]; hintText = '';
         g.clearHint(); g.resize(); setHeader(); update();
       } else {
-        load(Math.min(Math.max(store.get(key('cur'), 0), 0), g.levels.length - 1));
+        let i = Math.min(Math.max(store.get(key('cur'), 0), 0), g.levels.length - 1);
+        if (g.locked && g.locked(g.levels[i])) i = 0;
+        load(i);
       }
     }
     document.title = g.name + ' · Puzzles';
@@ -136,7 +177,7 @@ const Puzzles = (() => {
   }
 
   function leave() {
-    game.session = { idx, undoSt, redoSt, secs };
+    game.session = { idx, undoSt, redoSt, secs, finished };
     game.ctx.board.hidden = true;
     closePicker(); closeRules(false);
   }
@@ -194,7 +235,7 @@ const Puzzles = (() => {
   $('hint').onclick = () => {
     clearHint();
     const h = game.hint();
-    hintText = h ? h.text : '';
+    hintText = h ? h.text : ''; hintLabel = (h && h.label) || 'Why';
     update();
   };
   window.addEventListener('resize', () => { if (game && lv) game.resize(); });
@@ -205,14 +246,16 @@ const Puzzles = (() => {
     if (game.legend) { const lg = document.createElement('div'); lg.className = 'legend'; lg.innerHTML = game.legend; p.appendChild(lg); }
     for (const sec of game.sections()) {
       const el = document.createElement('section');
-      const done = sec.items.filter((l) => solvedMap[l.id] != null).length;
+      const done = sec.items.filter((l) => isSolved(l.id)).length;
       el.innerHTML = `<h2>${sec.title} · ${done} of ${sec.items.length} solved</h2>`;
       const grid = document.createElement('div'); grid.className = 'lv';
       for (const l of sec.items) {
         const b = document.createElement('button'); b.type = 'button'; b.textContent = l.id;
         if (game.levelClass) b.className = game.levelClass(l);
-        if (solvedMap[l.id] != null) b.classList.add('solved');
+        if (isSolved(l.id)) b.classList.add('solved');
         if (l.id === lv.id) b.classList.add('now');
+        if (game.badge) { const t = game.badge(l); if (t) { const s = document.createElement('small'); s.textContent = t; b.appendChild(s); } }
+        if (game.locked && game.locked(l)) { b.disabled = true; b.classList.add('locked'); b.setAttribute('aria-label', `Level ${l.id}, locked`); }
         b.onclick = () => load(game.levels.indexOf(l));
         grid.appendChild(b);
       }
