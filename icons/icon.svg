@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- The Puzzles icon: one tile per game on a board. Queens' crown, Tango's sun and moon, a drop of water. -->
+  <rect width="512" height="512" fill="#121414"/>
+  <g transform="translate(116 116)">
+    <rect width="140" height="140" fill="#a5472f"/>
+    <rect x="140" width="140" height="140" fill="#262b2b"/>
+    <rect y="140" width="140" height="140" fill="#3d443f"/>
+    <rect x="140" y="140" width="140" height="140" fill="#2f6ea3"/>
+    <path d="M0 140h280M140 0v280" stroke="#0b0d0d" stroke-width="6"/>
+    <rect width="280" height="280" fill="none" stroke="#c8ccc4" stroke-width="8"/>
+    <g transform="translate(70 72) scale(3.7) translate(-12 -13.5)">
+      <path d="M3 8l4.5 4 4.5-7 4.5 7L21 8l-2 10H5L3 8zm2 12h14v2H5z" fill="#e3b341" stroke="#0b0d0d" stroke-width="1" stroke-linejoin="round" paint-order="stroke"/>
+    </g>
+    <circle cx="210" cy="70" r="38" fill="#f4a62a" stroke="#b9690f" stroke-width="5"/>
+    <g transform="translate(70 210) scale(4.2) translate(-12 -12)"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="#5e8ff2" stroke="#2c52ae" stroke-width="1.2" stroke-linejoin="round"/></g>
+    <path d="M210 166c0 0-34 38-34 60a34 34 0 0 0 68 0c0-22-34-60-34-60z" fill="#8fe3f2" stroke="#1d5a86" stroke-width="5" stroke-linejoin="round"/>
+  </g>
+</svg>

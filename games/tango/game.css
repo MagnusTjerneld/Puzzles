@@ -1,0 +1,12 @@
+/* Tango: cell colours, the sun and moon in a cell. */
+body[data-game="tango"] {
+  --cell: #262b2b; --given: #3d443f;
+  --sun: #f4a62a; --sun-edge: #b9690f;
+  --moon: #5e8ff2; --moon-edge: #2c52ae;
+  --bad-ink: rgba(0,0,0,.34); --why-ink: rgba(0,0,0,.42);
+}
+[data-for="tango"] .cell.locked { cursor: default; }
+[data-for="tango"] .cell svg { width: 62%; height: 62%; filter: drop-shadow(0 1px 1px rgba(0,0,0,.4)); }
+[data-for="tango"] .sun circle { fill: var(--sun); stroke: var(--sun-edge); stroke-width: 1.6; }
+[data-for="tango"] .moon path { fill: var(--moon); stroke: var(--moon-edge); stroke-width: 1.6; stroke-linejoin: round; }
+[data-for="tango"].done .cell svg { filter: drop-shadow(0 0 7px rgba(240,169,58,.55)); }

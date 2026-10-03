@@ -1,0 +1,7 @@
+node_modules/
+_site/
+*.png
+
+# Built by scripts/ (locally or in Actions), not checked in.
+/index.html
+/sw.js

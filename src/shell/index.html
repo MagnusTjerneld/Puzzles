@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Puzzles</title>
+<meta name="description" content="__DESCRIPTION__">
+<meta name="theme-color" content="#121414">
+<!-- Link preview. __SITE_URL__ is set by scripts/build.js from the SITE_URL environment variable (set in Actions). -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Puzzles">
+<meta property="og:title" content="Puzzles: logic puzzles">
+<meta property="og:description" content="__DESCRIPTION__">
+<meta property="og:url" content="__SITE_URL__">
+<meta property="og:image" content="__SITE_URL__icons/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Puzzles logo: a board of four tiles, one for each puzzle.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Puzzles">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="fonts/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+__CSS__
+</style>
+</head>
+<body>
+
+<div class="hub" id="hub">
+  <div class="hub-in">
+    <div class="hub-head"><h1>Puzzles</h1><p>Logic puzzles · plays offline</p></div>
+    <div class="cards" id="cards"></div>
+    <p class="ver">__APP_VERSION__</p>
+  </div>
+</div>
+
+<!-- Patterns for the example boards in Rules. Must not be display:none, or the patterns are not drawn. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="p-bad" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3.5" height="7" style="fill:var(--bad-ink)"/></pattern>
+    <pattern id="p-why" width="5" height="5" patternUnits="userSpaceOnUse"><rect width="5" height="2.1" style="fill:var(--why-ink)"/></pattern>
+  </defs>
+</svg>
+
+<div class="app" id="app">
+  <header>
+    <button class="pill icon-btn" id="homeBtn" type="button" aria-label="All puzzles" title="All puzzles"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <h1 id="title">Level 1<small id="sub"></small></h1>
+    <div class="clock"><div class="timer" id="timer">00:00</div><small id="best"></small></div>
+    <div class="actions">
+      <button class="pill icon-btn" id="rulesBtn" type="button" aria-label="Rules" title="Rules">?</button>
+      <button class="pill icon-btn" id="menuBtn" type="button" aria-expanded="false" aria-label="Levels" title="Levels"></button>
+    </div>
+  </header>
+  <div class="stage" id="stage">
+    <div class="picker" id="picker" hidden></div>
+  </div>
+  <div class="status" id="status"></div>
+  <div class="explain" id="explain" hidden></div>
+  <div class="bar">
+    <button id="undo" type="button">Undo</button>
+    <button id="redo" type="button">Redo</button>
+    <button id="hint" type="button">Hint</button>
+    <button id="reset" type="button">Restart</button>
+  </div>
+</div>
+
+<div class="rules" id="rules" role="dialog" aria-modal="true" aria-labelledby="rulesTitle" hidden>
+  <div class="rules-in">
+    <header><h2 id="rulesTitle">Rules<small id="rulesSub"></small></h2><button class="pill" id="rulesClose" type="button">Close</button></header>
+    <div class="rules-body" id="rulesBody"></div>
+    <button class="go" id="rulesPlay" type="button">Play</button>
+  </div>
+</div>
+
+<script>
+__JS__
+</script>
+</body>
+</html>

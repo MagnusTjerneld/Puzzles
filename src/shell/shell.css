@@ -1,0 +1,150 @@
+/* The shell: one column on a phone. Header, a square stage for the game, status row, hint text, button bar.
+   The level picker folds out over the stage. A game sets its own accent (and any tokens it needs) on body[data-game]. */
+@font-face { font-family: "Bricolage Grotesque"; font-weight: 500 700; font-display: swap; src: url(fonts/bricolage-grotesque-latin.woff2) format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 400; font-display: swap; src: url(fonts/ibm-plex-mono-400-latin.woff2) format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 500; font-display: swap; src: url(fonts/ibm-plex-mono-500-latin.woff2) format("woff2"); }
+:root {
+  color-scheme: dark;
+  --bg: #121414;
+  --panel: #1b1e1e;
+  --panel-2: #252929;
+  --edge: #2c3131;
+  --fg: #e9ebe6;
+  --muted: #8f9792;
+  --line: #c8ccc4;
+  --ink: #0b0d0d;
+  --accent: #e3b341;
+  --on-accent: #1b1a14;
+  --bad: #ef5b50;
+  --good: #7fc28a;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+[hidden] { display: none !important; }
+html { background: var(--bg); }
+/* No pull-to-refresh or bounce: a downward swipe on the board must not reload the page. */
+html, body { height: 100%; margin: 0; overscroll-behavior: none; }
+body {
+  box-sizing: border-box; background: var(--bg); color: var(--fg);
+  font: 15px/1.4 var(--display);
+  /* Safe margins for the notch and home indicator when the app runs full screen. */
+  padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  display: flex; flex-direction: column; align-items: center;
+  overflow-x: hidden; touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { width: min(100%, 560px); flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; white-space: nowrap; }
+/* The level and the clock are two matching columns: big line on top, small line below (size and best time). */
+h1 small, .clock small { display: block; height: 1.3em; font: 400 12px/1.3 var(--mono); color: var(--muted); letter-spacing: 0.04em; margin-top: 3px; text-transform: uppercase; white-space: nowrap; }
+h1, .clock { flex: 1 1 0; } /* equal columns: the clock stays put whatever the level is called */
+.timer { font: 500 22px/1.1 var(--mono); font-variant-numeric: tabular-nums; }
+.pill { background: var(--panel-2); border: 0; border-radius: 999px; padding: 9px 16px; font-weight: 500; }
+.pill:hover { background: #2f3434; }
+.icon-btn { width: 40px; padding: 9px 0; text-align: center; font-weight: 700; display: grid; place-items: center; }
+.icon-btn svg { width: 18px; height: 18px; display: block; }
+.actions { display: flex; gap: 6px; }
+@media (max-width: 374px) { header { gap: 6px; } header .pill { padding-inline: 12px; } header .icon-btn { width: 36px; padding-inline: 0; } }
+
+.stage { position: relative; width: 100%; }
+.status { min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.count { font: 400 13px var(--mono); color: var(--muted); letter-spacing: .03em; text-transform: uppercase; white-space: nowrap; }
+.count b { color: var(--fg); font-weight: 500; }
+.msg { color: var(--muted); font-size: 14px; line-height: 1.3; min-width: 0; text-align: right; }
+.msg.bad { color: var(--bad); }
+.explain { background: var(--panel); border-radius: 12px; padding: 12px 14px; font-size: 15px; line-height: 1.45; }
+.explain b { display: block; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.win { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; }
+.win strong { font-size: 18px; color: var(--good); }
+.go { background: var(--accent); color: var(--on-accent); border: 0; border-radius: 999px; padding: 11px 20px; font-weight: 700; }
+
+.bar { display: flex; gap: 8px; margin-top: auto; padding-bottom: 6px; }
+.bar button { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--edge); border-radius: 12px; padding: 13px 6px; font-size: 14px; }
+.bar button:hover:not(:disabled) { background: var(--panel-2); }
+.bar button:disabled { opacity: .35; cursor: default; }
+
+.picker { position: absolute; inset: 0; background: var(--panel); border-radius: 4px; padding: 14px; overflow-y: auto; z-index: 5; }
+.picker h2 { margin: 0 0 8px; font: 500 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.picker section + section { margin-top: 16px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 0 14px; font: 400 12px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: var(--tc); }
+.t1 { --tc: var(--good); } .t2 { --tc: var(--accent); } .t3 { --tc: var(--bad); }
+.lv { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; }
+.lv button { background: var(--panel-2); border: 1px solid transparent; border-radius: 8px; padding: 8px 0; font: 400 13px var(--mono); font-variant-numeric: tabular-nums; }
+.lv button.t1, .lv button.t2, .lv button.t3 { border-bottom: 3px solid var(--tc); padding-bottom: 6px; }
+.lv button.solved { color: var(--good); border-color: #2f4a36; border-bottom-color: var(--tc, #2f4a36); }
+.lv button.now { background: var(--accent); color: var(--on-accent); font-weight: 500; }
+
+/* Rules: a full-screen sheet with small drawn example boards. */
+.rules { position: fixed; inset: 0; z-index: 20; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+.rules-in { width: min(100%, 560px); margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.rules-in > header { position: sticky; top: calc(-1 * max(12px, env(safe-area-inset-top))); background: var(--bg); padding: 4px 0 8px; z-index: 1; }
+.rules h2 { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.1; }
+.rules h2 small { display: block; font: 400 12px var(--mono); color: var(--muted); letter-spacing: .04em; margin-top: 3px; text-transform: uppercase; }
+.rules-body { display: flex; flex-direction: column; gap: 12px; }
+.rule { display: flex; gap: 14px; align-items: center; background: var(--panel); border-radius: 12px; padding: 12px; }
+.rule .pic { flex: 0 0 auto; width: 118px; }
+.rule > div:last-child { min-width: 0; }
+.rule h3 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+.rule p { margin: 0; color: #c4c9c2; font-size: 14px; line-height: 1.45; }
+.rule p b { color: var(--fg); font-weight: 700; }
+.rule h3 .n { font: 500 12px var(--mono); color: var(--accent); margin-right: 6px; }
+.rule.col { flex-direction: column; align-items: stretch; }
+.mini { display: block; width: 100%; height: auto; border-radius: 4px; }
+.taps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; font: 400 12px var(--mono); color: var(--muted); letter-spacing: .03em; }
+.taps .mini { width: 56px; margin: 0 auto 6px; }
+.verdict { display: inline-block; margin-top: 6px; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.verdict.bad { color: var(--bad); } .verdict.good { color: var(--good); }
+.rules .go { padding: 13px 20px; margin: 6px 0 4px; }
+
+/* Hub: the start screen. The wordmark, one card per game, the version at the bottom.
+   It sits first in body so it covers everything before the script has run. */
+.hub { position: fixed; inset: 0; z-index: 15; background: var(--bg); overflow-y: auto; transition: opacity .25s ease;
+  padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+.hub.out { opacity: 0; pointer-events: none; }
+.hub-in { width: min(100%, 560px); min-height: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.hub-head { margin-top: auto; padding-top: 8px; animation: rise .4s both; }
+.hub-head h1 { font-size: 34px; }
+.hub-head p { margin: 4px 0 0; font: 400 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.card { display: grid; grid-template-columns: 92px 1fr; grid-template-rows: auto auto 1fr auto; column-gap: 16px; align-items: start; text-align: left;
+  background: var(--panel); border: 1px solid var(--edge); border-radius: 18px; padding: 14px; animation: rise .4s both; }
+.card:nth-child(2) { animation-delay: .08s; } .card:nth-child(3) { animation-delay: .16s; } .card:nth-child(4) { animation-delay: .24s; }
+.card:hover { background: var(--panel-2); }
+.card svg { grid-row: 1 / -1; width: 92px; height: 92px; overflow: visible; }
+.card .cname { font-size: 22px; font-weight: 700; line-height: 1.1; }
+.card .ctag { color: #c4c9c2; font-size: 14px; line-height: 1.35; margin-top: 4px; }
+.card .cprog { font: 400 12px var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
+.card .cgo { justify-self: start; margin-top: 10px; background: var(--accent); color: var(--on-accent); border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 14px; }
+.hub .ver { margin: auto 0 0; padding-top: 12px; text-align: center; font: 400 11px var(--mono); letter-spacing: .06em; color: #5d6460; user-select: text; -webkit-user-select: text; }
+/* The logos build up the way they did on each game's old start screen. */
+.hub .sq { transform-box: fill-box; transform-origin: center; animation: sq .42s cubic-bezier(.2,.9,.3,1.3) both; }
+.hub .sq:nth-of-type(2) { animation-delay: .07s; } .hub .sq:nth-of-type(3) { animation-delay: .14s; } .hub .sq:nth-of-type(4) { animation-delay: .21s; }
+.hub .frame { animation: fade .3s .3s both; }
+.hub .pop { transform-box: fill-box; transform-origin: center; animation: pop .45s .4s cubic-bezier(.3,1.5,.5,1) both; }
+.hub .pop2 { animation-delay: .48s; } .hub .pop3 { animation-delay: .56s; } .hub .pop4 { animation-delay: .64s; }
+@keyframes sq { from { transform: scale(0); } }
+@keyframes pop { from { transform: scale(.4); opacity: 0; } }
+@keyframes rise { from { transform: translateY(8px); opacity: 0; } }
+@keyframes fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .hub *, .hub { animation: none !important; transition: none !important; } }
+
+/* Landscape phone: the board fills the height on the left, header, status, hint text and buttons stand in a column on the right. */
+@media (orientation: landscape) and (max-height: 600px) {
+  body { padding-top: max(10px, env(safe-area-inset-top)); padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+  .app { width: min(100%, 1000px); display: grid; grid-template-columns: auto minmax(300px, 1fr); grid-template-rows: auto auto auto 1fr auto; column-gap: 20px; row-gap: 12px; align-items: start; }
+  .stage { grid-column: 1; grid-row: 1 / -1; width: min(calc(100dvh - max(10px, env(safe-area-inset-top)) - max(10px, env(safe-area-inset-bottom))), calc(100vw - 32px - 320px)); }
+  .app > header { grid-column: 2; grid-row: 1; gap: 6px; }
+  header .pill { padding-inline: 12px; } header .icon-btn { width: 36px; padding-inline: 0; }
+  .status { grid-column: 2; grid-row: 2; min-height: 0; flex-wrap: wrap; }
+  .explain { grid-column: 2; grid-row: 3; }
+  .bar { grid-column: 2; grid-row: 5; align-self: end; margin-top: 0; padding-bottom: 0; }
+  .bar button { padding: 11px 2px; white-space: nowrap; }
+  .hub { padding-top: max(16px, env(safe-area-inset-top)); }
+  .hub-in { width: min(100%, 900px); gap: 14px; }
+  .hub-head h1 { font-size: 28px; }
+}

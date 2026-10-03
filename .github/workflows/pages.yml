@@ -1,0 +1,72 @@
+# Builds and publishes the site to GitHub Pages on every push to main. Pull requests are built and tested, not published.
+# Built files (index.html, sw.js, PNG icons) are not checked in; they are made here from source.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # A normal build takes about a minute. If something hangs, fail after 15 minutes instead of 6 hours.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # No browser is downloaded: scripts/browser.js uses the Chrome that is already on the runner.
+      - name: Install playwright
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+
+      - name: Check the levels
+        run: for f in games/*/verify.py; do python3 "$f" || exit 1; done
+
+      # SITE_URL is needed for the link preview (og:image must be an absolute address).
+      # The default is the GitHub Pages address; set the repository variable SITE_URL for a custom domain.
+      - name: Build icons, page and service worker
+        env:
+          SITE_URL: ${{ vars.SITE_URL || format('https://{0}.github.io/{1}/', github.repository_owner, github.event.repository.name) }}
+        run: |
+          node scripts/build-icons.js
+          node scripts/build.js
+
+      - name: Follow Hint through every level
+        run: node test/hints.test.js
+
+      - name: Collect the site
+        run: |
+          mkdir _site
+          cp -r index.html sw.js manifest.webmanifest icons fonts _site/
+          touch _site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

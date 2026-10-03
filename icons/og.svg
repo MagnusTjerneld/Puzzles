@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <!-- Link preview image (Open Graph), 1200 x 630. Rendered to icons/og.png by scripts/build-icons.js. -->
+  <rect width="1200" height="630" fill="#121414"/>
+  <g transform="translate(110 155) scale(1.1429)">
+    <rect width="140" height="140" fill="#a5472f"/>
+    <rect x="140" width="140" height="140" fill="#262b2b"/>
+    <rect y="140" width="140" height="140" fill="#3d443f"/>
+    <rect x="140" y="140" width="140" height="140" fill="#2f6ea3"/>
+    <path d="M0 140h280M140 0v280" stroke="#0b0d0d" stroke-width="6"/>
+    <rect width="280" height="280" fill="none" stroke="#c8ccc4" stroke-width="8"/>
+    <g transform="translate(70 72) scale(3.7) translate(-12 -13.5)">
+      <path d="M3 8l4.5 4 4.5-7 4.5 7L21 8l-2 10H5L3 8zm2 12h14v2H5z" fill="#e3b341" stroke="#0b0d0d" stroke-width="1" stroke-linejoin="round" paint-order="stroke"/>
+    </g>
+    <circle cx="210" cy="70" r="38" fill="#f4a62a" stroke="#b9690f" stroke-width="5"/>
+    <g transform="translate(70 210) scale(4.2) translate(-12 -12)"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="#5e8ff2" stroke="#2c52ae" stroke-width="1.2" stroke-linejoin="round"/></g>
+    <path d="M210 166c0 0-34 38-34 60a34 34 0 0 0 68 0c0-22-34-60-34-60z" fill="#8fe3f2" stroke="#1d5a86" stroke-width="5" stroke-linejoin="round"/>
+  </g>
+  <text x="520" y="318" fill="#e9ebe6" font-family="Bricolage Grotesque, sans-serif" font-weight="700" font-size="150" letter-spacing="-2">Puzzles</text>
+  <text x="526" y="392" fill="#e3b341" font-family="IBM Plex Mono, monospace" font-weight="500" font-size="28" letter-spacing="4">LOGIC PUZZLES</text>
+  <text x="524" y="456" fill="#8f9792" font-family="Bricolage Grotesque, sans-serif" font-weight="500" font-size="32">Queens and Tango. On your phone, even offline.</text>
+</svg>

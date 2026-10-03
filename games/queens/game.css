@@ -1,0 +1,12 @@
+/* Queens: region colours, the cross and crown in a cell, and the drag demo in the rules. */
+body[data-game="queens"] {
+  --r0: #a5472f; --r1: #9a6e1c; --r2: #6f8128; --r3: #2f7d57; --r4: #237d82;
+  --r5: #2f6ea3; --r6: #6a53a8; --r7: #92489a; --r8: #a43f68;
+  --bad-ink: rgba(0,0,0,.28); --why-ink: rgba(0,0,0,.36);
+}
+[data-for="queens"] .cell { color: rgba(255,255,255,.6); font: 500 clamp(14px, 5vw, 26px) var(--mono); }
+[data-for="queens"] .cell svg { width: 58.9%; height: 58.9%; fill: #f6f3ea; filter: drop-shadow(0 1px 1px rgba(0,0,0,.45)); }
+[data-for="queens"] .cell.conflict svg { fill: #1a0c0c; filter: none; }
+[data-for="queens"].done .cell svg { fill: var(--accent); filter: drop-shadow(0 1px 1px rgba(0,0,0,.55)); }
+body[data-game="queens"] .dragdemo { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; font: 400 12px var(--mono); color: var(--muted); letter-spacing: .03em; }
+body[data-game="queens"] .dragdemo .mini { width: 190px; flex: 0 0 auto; }

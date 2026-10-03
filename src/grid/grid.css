@@ -1,0 +1,15 @@
+/* Grid kit: the canvas board with a button per cell, and the marks a hint or a clash puts on a cell.
+   --bad-ink and --why-ink (set per game) are the hatching for a clash and the stripes for a hint's reason. */
+.board { position: relative; width: max-content; margin-inline: 0; line-height: 0; border-radius: 6px; overflow: hidden; touch-action: none; }
+.board canvas { display: block; image-rendering: pixelated; }
+.board.done { pointer-events: none; }
+.cells { position: absolute; inset: 0; display: grid; padding: var(--lp, 4px); gap: 0; }
+.cell { position: relative; border: 0; padding: 0; margin: 0; display: grid; place-items: center; background: transparent; -webkit-tap-highlight-color: transparent; }
+.cell svg { position: relative; z-index: 1; }
+.cell.why::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  background: repeating-linear-gradient(180deg, var(--why-ink) 0 3px, transparent 3px 7px); }
+.cell.conflict::after { content: ""; position: absolute; inset: 0; z-index: 3; box-shadow: inset 0 0 0 3px #fff;
+  background: repeating-linear-gradient(45deg, var(--bad-ink) 0 5px, transparent 5px 10px); }
+.cell.hint::after { content: ""; position: absolute; inset: 0; z-index: 3; box-shadow: inset 0 0 0 3px #fff; animation: pulse 1s ease-in-out 3; }
+@keyframes pulse { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .cell.hint::after { animation: none; } }

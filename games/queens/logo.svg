@@ -1,0 +1,15 @@
+<svg viewBox="108 108 296 296" aria-hidden="true">
+  <g transform="translate(116 116)">
+    <rect class="sq" width="140" height="140" fill="#a5472f"/>
+    <rect class="sq" x="140" width="140" height="140" fill="#2f6ea3"/>
+    <rect class="sq" x="140" y="140" width="140" height="140" fill="#6a53a8"/>
+    <rect class="sq" y="140" width="140" height="140" fill="#2f7d57"/>
+    <g class="frame">
+      <path d="M0 140h280M140 0v280" stroke="#0b0d0d" stroke-width="6"/>
+      <rect width="280" height="280" fill="none" stroke="#c8ccc4" stroke-width="8"/>
+    </g>
+  </g>
+  <g transform="translate(256 256) scale(7.5) translate(-12 -13.5)">
+    <path class="pop" d="M3 8l4.5 4 4.5-7 4.5 7L21 8l-2 10H5L3 8zm2 12h14v2H5z" fill="#e3b341" stroke="#0b0d0d" stroke-width="1" stroke-linejoin="round" paint-order="stroke"/>
+  </g>
+</svg>
