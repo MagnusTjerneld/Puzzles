@@ -30,7 +30,7 @@ Stored in `localStorage` per game: `<id>.solved` (`{ levelId: best seconds }`, o
 
 ## Jugz
 
-Moved in from the standalone Jugz (`magnustjerneld/Jugz`), whose CLAUDE.md holds the long reasoning behind the vessels; the parts that are load-bearing here:
+Moved in from the standalone Jugz (`MagnusTjerneld/Jugz`, now only a redirect). Its CLAUDE.md, with the long reasoning behind the vessels, is kept as `games/jugz/NOTES.md`; the parts that are load-bearing here:
 
 - **Progress**: the standalone app saved `{ current, stars: { levelIndex: n }, skin }` under `jugz_v1`. `game.js` migrates it once into `jugz.solved` (ids are index + 1, times unknown so `null`), `jugz.stars`, `jugz.cur` and `jugz.skin`, and sets `jugz.migrated`. `games/jugz/generate.js` reproduces the old bank exactly (seed 20260819); changing the seed reattributes stars.
 - **Rules of play**: `Engine.pours` defines a pour (until the source is empty or the target full). Stars: 3 at `moves <= opt`, 2 within two more, else 1. Undo takes a pour back off the count. Levels unlock in order (`locked`). The optimum is shown only after a level has been solved (`status`), because the length of the solution is a large part of the puzzle. Hint gives the first pour of `Engine.solveFrom` and says which jugs.
