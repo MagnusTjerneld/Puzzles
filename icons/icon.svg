@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- The Puzzles icon: one tile per game on a board. Queens' crown, Tango's sun and moon, a drop of water. -->
   <rect width="512" height="512" fill="#121414"/>
-  <g transform="translate(116 116)">
+  <g transform="translate(36 36) scale(1.5714)">
     <rect width="140" height="140" fill="#a5472f"/>
     <rect x="140" width="140" height="140" fill="#262b2b"/>
     <rect y="140" width="140" height="140" fill="#3d443f"/>

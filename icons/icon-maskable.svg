@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Maskable app icon: full bleed, because Android crops it to a circle or squircle. The tiles run to the edges and the
+       symbols sit inside the safe zone (a circle of 80% of the width), so nothing that matters is cut away. -->
+  <rect width="256" height="256" fill="#a5472f"/>
+  <rect x="256" width="256" height="256" fill="#262b2b"/>
+  <rect y="256" width="256" height="256" fill="#3d443f"/>
+  <rect x="256" y="256" width="256" height="256" fill="#2f6ea3"/>
+  <path d="M256 0v512M0 256h512" stroke="#0b0d0d" stroke-width="10"/>
+  <g transform="translate(158 162) scale(5.0) translate(-12 -13.5)">
+    <path d="M3 8l4.5 4 4.5-7 4.5 7L21 8l-2 10H5L3 8zm2 12h14v2H5z" fill="#e3b341" stroke="#0b0d0d" stroke-width="1" stroke-linejoin="round" paint-order="stroke"/>
+  </g>
+  <circle cx="354" cy="158" r="54" fill="#f4a62a" stroke="#b9690f" stroke-width="6"/>
+  <g transform="translate(158 354) scale(5.8) translate(-12 -12)"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="#5e8ff2" stroke="#2c52ae" stroke-width="1.2" stroke-linejoin="round"/></g>
+  <path d="M354 280c0 0-48 52-48 84a48 48 0 0 0 96 0c0-32-48-84-48-84z" fill="#8fe3f2" stroke="#1d5a86" stroke-width="6" stroke-linejoin="round"/>
+</svg>
