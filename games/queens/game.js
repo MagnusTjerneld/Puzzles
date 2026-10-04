@@ -55,7 +55,9 @@ function paint() {
   }
 }
 
-// Drag across the board to cross every cell the finger passes, in any direction. Queens are left alone.
+// Drag along a row or a column to cross every cell the finger passes. Queens are left alone.
+// The drag locks to the row or the column by the way the finger is heading when it leaves the first cell, and the
+// finger is then read as if it stayed on that line, so a wobble never catches a cell in the next row.
 // A drag that starts on a cross erases crosses instead. The whole drag is one undo step.
 // If the finger never leaves the cell it started on, it counts as an ordinary tap (click below).
 let drag = null, skipClick = false;
@@ -71,7 +73,7 @@ function init(c) {
   board.addEventListener('pointerdown', (e) => {
     if (ctx.finished || (e.pointerType === 'mouse' && e.button !== 0)) return;
     const i = Grid.cellAt(board, n, e.clientX, e.clientY); if (i < 0) return;
-    drag = { id: e.pointerId, start: i, x: e.clientX, y: e.clientY, active: false, erase: marks[i] === 1, base: marks.slice(), changed: false };
+    drag = { id: e.pointerId, start: i, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, row: true, active: false, erase: marks[i] === 1, base: marks.slice(), changed: false };
   });
   board.addEventListener('pointermove', (e) => {
     if (!drag || e.pointerId !== drag.id) return;
@@ -80,13 +82,15 @@ function init(c) {
       if (to === drag.start || to < 0) return;
       drag.active = true; clearHint();
       board.setPointerCapture(e.pointerId);
+      drag.row = Math.abs(e.clientX - drag.x0) >= Math.abs(e.clientY - drag.y0);
       dragMark(drag.start);
     }
-    // Follow the finger's path in small steps, so a quick swipe does not skip cells.
-    const cellPx = cells.getBoundingClientRect().width / n, dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    // Follow the finger along the line in small steps, so a quick swipe does not skip cells.
+    const x = drag.row ? e.clientX : drag.x0, y = drag.row ? drag.y0 : e.clientY;
+    const cellPx = cells.getBoundingClientRect().width / n, dx = x - drag.x, dy = y - drag.y;
     const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / (cellPx / 4)));
     for (let k = 1; k <= steps; k++) dragMark(Grid.cellAt(board, n, drag.x + (dx * k) / steps, drag.y + (dy * k) / steps));
-    drag.x = e.clientX; drag.y = e.clientY;
+    drag.x = x; drag.y = y;
     ctx.refresh();
   });
   const endDrag = (e) => {
@@ -281,7 +285,7 @@ function rulesHtml() {
       B({ q: [at(3, 2), at(4, 3)], bad: [at(3, 2), at(4, 3)], label: 'Two queens touching diagonally' }), Rules.WRONG),
     `<section class="rule col"><div><h3><span class="n">05</span>How to mark</h3><p>Tap a cell to cycle through cross, queen and empty.</p></div>
       <div class="taps"><div>${one({ x: [0] })}1 tap<br>cross</div><div>${one({ q: [0] })}2 taps<br>queen</div><div>${one({})}3 taps<br>empty</div></div>
-      <p><b>Press and drag</b> across several cells to cross them all at once, in any direction. Queens are left alone. Start on a cross to erase crosses instead.</p>
+      <p><b>Press and drag</b> along a row or a column to cross several cells at once. Queens are left alone. Start on a cross to erase crosses instead.</p>
       <div class="dragdemo">${mini({ rows: 1, cols: 5, grid: [5, 5, 3, 3, 3], x: [0, 1, 2, 3, 4], drag: [0, 1, 2, 3, 4], label: 'Press and drag across a row: every cell is crossed' })}<span>press and drag: crosses on all</span></div></section>`,
     card('06', 'Cross out what cannot be', 'Put a cross where a queen cannot go. Every queen closes its row, column and region, and the cells around it.',
       B({ q: [q0], x: blocked, label: 'A queen and every cell it closes, crossed out' })),
