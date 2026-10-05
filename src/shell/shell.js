@@ -50,7 +50,7 @@ const Puzzles = (() => {
   const games = [], byId = {};
   let game = null;          // the game on screen (or last on screen, while the hub shows)
   let solvedMap = {}, idx = 0, lv = null;
-  let undoSt = [], redoSt = [], secs = 0, finished = false, hintText = '', hintLabel = 'Why';
+  let undoSt = [], redoSt = [], secs = 0, ticking = false, finished = false, hintText = '', hintLabel = 'Why';
   let fromHub = false;      // this game was entered from a hub card, so the home button can go back in history
   let cardClicked = false;  // set by a card, read by the hash change it causes
 
@@ -141,7 +141,7 @@ const Puzzles = (() => {
 
   function load(i) {
     idx = i; lv = game.levels[i];
-    undoSt = []; redoSt = []; secs = 0; hintText = ''; finished = false;
+    undoSt = []; redoSt = []; secs = 0; ticking = false; hintText = ''; finished = false;
     store.set(key('cur'), i);
     game.load(lv);
     setHeader(); update(); closePicker();
@@ -162,7 +162,7 @@ const Puzzles = (() => {
       solvedMap = store.get(key('solved'), {});
       if (g.session) {
         // Back to a game left during this visit: pick up where it was, mid-level included.
-        ({ idx, undoSt, redoSt, secs, finished } = g.session);
+        ({ idx, undoSt, redoSt, secs, ticking, finished } = g.session);
         lv = g.levels[idx]; hintText = '';
         g.clearHint(); g.resize(); setHeader(); update();
       } else {
@@ -177,7 +177,7 @@ const Puzzles = (() => {
   }
 
   function leave() {
-    game.session = { idx, undoSt, redoSt, secs, finished };
+    game.session = { idx, undoSt, redoSt, secs, ticking, finished };
     game.ctx.board.hidden = true;
     closePicker(); closeRules(false);
   }
@@ -228,9 +228,13 @@ const Puzzles = (() => {
   // ---------- Buttons ----------
   $('undo').onclick = () => { if (!undoSt.length) return; redoSt.push(game.snapshot()); game.restore(undoSt.pop()); clearHint(); update(); };
   $('redo').onclick = () => { if (!redoSt.length) return; undoSt.push(game.snapshot()); game.restore(redoSt.pop()); clearHint(); update(); };
+  // Restart is an undoable step and the clock runs on: Restart then Undo must not give the board back with a fresh
+  // clock. A solved level is the exception: restarting it is a new attempt, so the clock and the history start over.
   $('reset').onclick = () => {
-    if (game.started()) { const s = game.snapshot(); game.reset(); commit(s); }
-    secs = 0; $('timer').textContent = fmt(0);
+    if (finished) {
+      game.reset(); undoSt = []; redoSt = []; secs = 0; ticking = false; clearHint(); update();
+      $('timer').textContent = fmt(0);
+    } else if (game.started()) { const s = game.snapshot(); game.reset(); commit(s); }
   };
   $('hint').onclick = () => {
     clearHint();
@@ -297,10 +301,12 @@ const Puzzles = (() => {
     if (!$('rules').hidden) closeRules(); else if (!$('picker').hidden) closePicker();
   });
 
-  // The clock runs while a level is being played and nothing covers it. It starts at the first move.
+  // The clock runs while a level is being played and nothing covers it. It starts at the first move and then keeps
+  // running, also when Restart or Undo takes the board back to its start.
   setInterval(() => {
     if (!game || finished || document.hidden || hubShowing() || !$('picker').hidden || !$('rules').hidden) return;
-    if (!game.started()) return;
+    if (!ticking && !game.started()) return;
+    ticking = true;
     secs++; $('timer').textContent = fmt(secs);
   }, 1000);
 
