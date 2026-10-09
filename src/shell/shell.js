@@ -29,7 +29,8 @@
 //
 // Progress is stored per game under "<id>.solved" ({ levelId: best seconds, or null when solved without a time }),
 // "<id>.cur" (level index) and "<id>.rulesSeen", the same keys the standalone games used, so progress carried over
-// when they moved in.
+// when they moved in. The level in play is saved as well, under "<id>.play" (board, undo and redo stacks, clock), so
+// closing the app mid-level and coming back resumes it.
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -80,6 +81,34 @@ const Puzzles = (() => {
   }
 
   function commit(s) { undoSt.push(s); redoSt = []; clearHint(); update(); }
+
+  // The level in play, saved after every change and when the page is hidden or closed. Nothing is kept for a level
+  // that is solved or untouched.
+  function savePlay() {
+    if (!game || !lv) return;
+    if (finished || (!game.started() && !undoSt.length && !redoSt.length)) { try { localStorage.removeItem(key('play')); } catch (e) {} return; }
+    store.set(key('play'), { lv: lv.id, s: game.snapshot(), undo: undoSt, redo: redoSt, secs, ticking });
+  }
+  // Same arrays of the same lengths and objects with the same keys: a saved board that still fits the level.
+  function sameShape(a, b) {
+    if (typeof a !== typeof b || Array.isArray(a) !== Array.isArray(b)) return false;
+    if (Array.isArray(a)) return a.length === b.length && a.every((x, i) => sameShape(x, b[i]));
+    if (a && typeof a === 'object') { const k = Object.keys(a); return k.length === Object.keys(b).length && k.every((x) => sameShape(a[x], b[x])); }
+    return true;
+  }
+  // Called right after load(): put the saved play of that level back, if there is one and it still fits.
+  function resumePlay(saved) {
+    if (!saved || saved.lv !== lv.id || !Array.isArray(saved.undo) || !Array.isArray(saved.redo) || typeof saved.secs !== 'number') return;
+    const fresh = game.snapshot();
+    if (![saved.s, ...saved.undo, ...saved.redo].every((x) => sameShape(x, fresh))) return;
+    try {
+      game.restore(saved.s);
+      undoSt = saved.undo; redoSt = saved.redo; secs = saved.secs; ticking = !!saved.ticking;
+      setHeader(); update();
+    } catch (e) { load(idx); }
+  }
+  addEventListener('pagehide', savePlay);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) savePlay(); });
   function clearHint() { hintText = ''; game.clearHint(); }
 
   function update() {
@@ -108,6 +137,7 @@ const Puzzles = (() => {
     }
     $('undo').disabled = !undoSt.length; $('redo').disabled = !redoSt.length;
     $('hint').disabled = finished;
+    savePlay();
   }
 
   // localStorage is best effort: WebKit clears script-writable storage after seven days without interaction, and
@@ -168,7 +198,9 @@ const Puzzles = (() => {
       } else {
         let i = Math.min(Math.max(store.get(key('cur'), 0), 0), g.levels.length - 1);
         if (g.locked && g.locked(g.levels[i])) i = 0;
+        const saved = store.get(key('play'), null); // read first: load() overwrites it
         load(i);
+        resumePlay(saved);
       }
     }
     document.title = g.name + ' · Puzzles';
@@ -177,6 +209,7 @@ const Puzzles = (() => {
   }
 
   function leave() {
+    savePlay();
     game.session = { idx, undoSt, redoSt, secs, ticking, finished };
     game.ctx.board.hidden = true;
     closePicker(); closeRules(false);
