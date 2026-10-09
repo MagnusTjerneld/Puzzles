@@ -22,11 +22,11 @@ Adding a game: a new folder with the files above, its id in `GAMES` in `scripts/
 
 The game owns its state; the shell owns the undo and redo stacks of opaque `snapshot()`s. Every player action goes through `ctx.change(fn)` (one undo step), or `ctx.record(before)` after an in-place change such as a drag. `ctx.refresh()` repaints without an undo step. After every change the shell calls `render()`, then `solved()` and `status()`.
 
-When the player switches games, the shell keeps the old game's session (level, stacks, clock) and the game keeps its state in its own scope, so coming back resumes mid-level. Reloading the page starts the saved level from scratch.
+When the player switches games, the shell keeps the old game's session (level, stacks, clock) and the game keeps its state in its own scope, so coming back resumes mid-level. The level in play is also saved to `localStorage` (`<id>.play`: snapshot, undo and redo stacks, clock; written after every change and on `pagehide`), so closing the app or reloading resumes it too. Snapshots must therefore be JSON-serialisable. A saved play is dropped when the level is solved or untouched, or when its shape no longer fits the level.
 
 ### Progress
 
-Stored in `localStorage` per game: `<id>.solved` (`{ levelId: best seconds }`, or `null` for solved without a time), `<id>.cur` (level index) and `<id>.rulesSeen`. These are the keys the standalone Queens and Tango apps used; they lived on the same origin (`magnustjerneld.github.io`), so players kept their progress when the games moved in here. Do not rename them. Level ids are positions in `levels.json`; regenerating a level bank reattributes saved progress. Once ten levels are solved in total, the shell asks for persistent storage (`askPersist`).
+Stored in `localStorage` per game: `<id>.solved` (`{ levelId: best seconds }`, or `null` for solved without a time), `<id>.cur` (level index), `<id>.rulesSeen` and `<id>.play` (the unfinished level). These are the keys the standalone Queens and Tango apps used; they lived on the same origin (`magnustjerneld.github.io`), so players kept their progress when the games moved in here. Do not rename them. Level ids are positions in `levels.json`; regenerating a level bank reattributes saved progress. Once ten levels are solved in total, the shell asks for persistent storage (`askPersist`).
 
 ## Jugz
 
