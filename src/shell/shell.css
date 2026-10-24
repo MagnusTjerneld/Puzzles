@@ -61,6 +61,7 @@ h1, .clock { flex: 1 1 0; } /* equal columns: the clock stays put whatever the l
 .win strong { font-size: 18px; color: var(--good); }
 .win .note { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
 .win .note:empty { display: none; }
+.win .rec { color: var(--good); font-weight: 600; }
 .go { background: var(--accent); color: var(--on-accent); border: 0; border-radius: 999px; padding: 11px 20px; font-weight: 700; }
 
 .bar { display: flex; gap: 8px; margin-top: auto; padding-bottom: 6px; }
