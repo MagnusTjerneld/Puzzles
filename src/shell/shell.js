@@ -52,6 +52,7 @@ const Puzzles = (() => {
   let game = null;          // the game on screen (or last on screen, while the hub shows)
   let solvedMap = {}, idx = 0, lv = null;
   let undoSt = [], redoSt = [], secs = 0, ticking = false, finished = false, hintText = '', hintLabel = 'Why';
+  let prevBest = null;      // the best time when this attempt began, so a new record can say what it beat
   let fromHub = false;      // this game was entered from a hub card, so the home button can go back in history
   let cardClicked = false;  // set by a card, read by the hash change it causes
 
@@ -127,7 +128,8 @@ const Puzzles = (() => {
       if (!was) { if (game.onSolved) game.onSolved(); askPersist(); }
       const last = idx === game.levels.length - 1;
       store.set(key('cur'), last ? idx : idx + 1); // next time the game opens on the next level
-      st.innerHTML = `<div class="win"><div><strong>Solved in ${fmt(secs)}</strong><small class="note" id="winNote"></small></div>${last ? '' : '<button class="go" id="next" type="button">Next level</button>'}</div>`;
+      const rec = prevBest != null && secs < prevBest ? `New best! Previous ${fmt(prevBest)}` : '';
+      st.innerHTML = `<div class="win"><div><strong>Solved in ${fmt(secs)}</strong><small class="note rec">${rec}</small><small class="note" id="winNote"></small></div>${last ? '' : '<button class="go" id="next" type="button">Next level</button>'}</div>`;
       $('winNote').textContent = game.winNote ? game.winNote() : '';
       const nx = $('next'); if (nx) nx.onclick = () => load(idx + 1);
     } else {
@@ -171,7 +173,7 @@ const Puzzles = (() => {
 
   function load(i) {
     idx = i; lv = game.levels[i];
-    undoSt = []; redoSt = []; secs = 0; ticking = false; hintText = ''; finished = false;
+    undoSt = []; redoSt = []; secs = 0; ticking = false; hintText = ''; finished = false; prevBest = bestOf(lv.id);
     store.set(key('cur'), i);
     game.load(lv);
     setHeader(); update(); closePicker();
@@ -192,7 +194,7 @@ const Puzzles = (() => {
       solvedMap = store.get(key('solved'), {});
       if (g.session) {
         // Back to a game left during this visit: pick up where it was, mid-level included.
-        ({ idx, undoSt, redoSt, secs, ticking, finished } = g.session);
+        ({ idx, undoSt, redoSt, secs, ticking, finished, prevBest } = g.session);
         lv = g.levels[idx]; hintText = '';
         g.clearHint(); g.resize(); setHeader(); update();
       } else {
@@ -210,7 +212,7 @@ const Puzzles = (() => {
 
   function leave() {
     savePlay();
-    game.session = { idx, undoSt, redoSt, secs, ticking, finished };
+    game.session = { idx, undoSt, redoSt, secs, ticking, finished, prevBest };
     game.ctx.board.hidden = true;
     closePicker(); closeRules(false);
   }
@@ -265,7 +267,7 @@ const Puzzles = (() => {
   // clock. A solved level is the exception: restarting it is a new attempt, so the clock and the history start over.
   $('reset').onclick = () => {
     if (finished) {
-      game.reset(); undoSt = []; redoSt = []; secs = 0; ticking = false; clearHint(); update();
+      game.reset(); undoSt = []; redoSt = []; secs = 0; ticking = false; prevBest = bestOf(lv.id); clearHint(); update();
       $('timer').textContent = fmt(0);
     } else if (game.started()) { const s = game.snapshot(); game.reset(); commit(s); }
   };
