@@ -68,6 +68,8 @@ h1, .clock { flex: 1 1 0; } /* equal columns: the clock stays put whatever the l
 .bar button { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--edge); border-radius: 12px; padding: 13px 6px; font-size: 14px; }
 .bar button:hover:not(:disabled) { background: var(--panel-2); }
 .bar button:disabled { opacity: .35; cursor: default; }
+.bar button.primary { background: var(--accent); color: var(--on-accent); border-color: transparent; font-weight: 700; }
+.bar button.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
 
 .picker { position: absolute; inset: 0; background: var(--panel); border-radius: 4px; padding: 14px; overflow-y: auto; z-index: 5; }
 .picker h2 { margin: 0 0 8px; font: 500 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }

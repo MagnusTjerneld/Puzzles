@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="96 96 320 320">
+  <rect width="512" height="512" fill="#121414"/>
+  <g transform="translate(116 116)">
+    <rect width="280" height="280" fill="#1d1f24"/>
+    <rect x="10" y="10" width="80" height="80" rx="6" fill="#f3f0e7"/><rect x="100" y="10" width="80" height="80" rx="6" fill="#f3f0e7"/><rect x="190" y="10" width="80" height="80" rx="6" fill="#f3f0e7"/><rect x="10" y="100" width="80" height="80" rx="6" fill="#f3f0e7"/><rect x="100" y="100" width="80" height="80" rx="6" fill="#f3f0e7"/><rect x="190" y="100" width="80" height="80" rx="6" fill="#f3f0e7"/><rect x="10" y="190" width="80" height="80" rx="6" fill="#f3f0e7"/><rect x="100" y="190" width="80" height="80" rx="6" fill="#f3f0e7"/>
+    <circle cx="230" cy="236" r="40" fill="#2a2c33" stroke="#ff9a76" stroke-width="7"/><path d="M230 236V212M230 236l15 10" stroke="#ff9a76" stroke-width="7" stroke-linecap="round"/><path d="M220 186h20" stroke="#ff9a76" stroke-width="7" stroke-linecap="round"/>
+    <rect width="280" height="280" fill="none" stroke="#c8ccc4" stroke-width="8"/>
+  </g>
+</svg>

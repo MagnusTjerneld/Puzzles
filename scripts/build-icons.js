@@ -1,4 +1,4 @@
-// Renders icons/icon.svg to the PNG icons the manifest and iOS need, each game's icon.svg to its shortcut icon,
+// Renders icons/icon.svg to the PNG icons the manifest and iOS need, each game's icon.svg (and icon-<id>.svg) to its shortcut icon,
 // and icons/og.svg to the link preview (og.png, 1200 x 630). The fonts are embedded so the preview text uses them.
 // Needs playwright. Run: node scripts/build-icons.js
 const fs = require('fs');
@@ -19,8 +19,13 @@ const out = {
   'apple-touch-icon.png': ['icons/icon-maskable.svg', 180, 180],
   'og.png': ['icons/og.svg', 1200, 630],
 };
+// A folder can register a second game (Matrix registers Matrix Test); its icon is icon-<id>.svg.
 for (const g of fs.readdirSync(path.join(root, 'games'))) {
-  if (fs.existsSync(path.join(root, 'games', g, 'icon.svg'))) out[`${g}-192.png`] = [`games/${g}/icon.svg`, 192, 192];
+  for (const f of fs.readdirSync(path.join(root, 'games', g))) {
+    if (f === 'icon.svg') out[`${g}-192.png`] = [`games/${g}/icon.svg`, 192, 192];
+    const m = f.match(/^icon-([a-z0-9]+)\.svg$/);
+    if (m) out[`${m[1]}-192.png`] = [`games/${g}/${f}`, 192, 192];
+  }
 }
 (async () => {
   const b = await launch();

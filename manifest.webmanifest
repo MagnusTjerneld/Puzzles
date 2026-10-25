@@ -21,6 +21,7 @@
     { "name": "Queens", "url": "./#queens", "icons": [{ "src": "icons/queens-192.png", "sizes": "192x192", "type": "image/png" }] },
     { "name": "Tango", "url": "./#tango", "icons": [{ "src": "icons/tango-192.png", "sizes": "192x192", "type": "image/png" }] },
     { "name": "Jugz", "url": "./#jugz", "icons": [{ "src": "icons/jugz-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "Matrix", "url": "./#matrix", "icons": [{ "src": "icons/matrix-192.png", "sizes": "192x192", "type": "image/png" }] }
+    { "name": "Matrix", "url": "./#matrix", "icons": [{ "src": "icons/matrix-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Matrix Test", "url": "./#mtest", "icons": [{ "src": "icons/mtest-192.png", "sizes": "192x192", "type": "image/png" }] }
   ]
 }

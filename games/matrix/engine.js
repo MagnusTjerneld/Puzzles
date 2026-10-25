@@ -360,4 +360,86 @@ function generateLevel({ seed, layout, vary, kinds, cols = 0 }) {
   return null;
 }
 
-module.exports = { LAYOUTS, ATTRS, CLASS, RULES, get, pop, turn, holds, explain, accepts, generateLevel };
+// ---------- Sets of levels ----------
+// Matrix Test: how many questions of each tier a test of 25 or 50 has, with the weight on hard.
+const TEST_MIX = { 25: { 1: 3, 2: 5, 3: 9, 4: 8 }, 50: { 1: 6, 2: 10, 3: 18, 4: 16 } };
+// The rules each tier draws from (a rule listed twice is drawn twice as often). type: shapes, num: sizes and shades,
+// n: how many, p: which places, l: lines; nShare: how often a grid's rule is about the count rather than the places.
+const KINDS = {
+  1: { type: ['dist', 'up1'], num: ['dist', 'up1', 'down1'], n: ['up1', 'down1', 'dist'], p: ['dist'], l: ['or'] },
+  2: { type: ['dist', 'up1', 'down1'], num: ['dist', 'up1', 'down1'], n: ['up1', 'down1', 'dist', 'add'], p: ['dist', 'or', 'xor'], l: ['xor', 'and', 'or', 'dist'] },
+  3: { type: ['dist', 'up1', 'down1'], num: ['dist', 'up1', 'down1', 'up2', 'down2'], n: ['add', 'sub', 'dist', 'up1'], p: ['xor', 'and', 'or', 'dist', 'minus'], l: ['xor', 'and', 'minus', 'cw1', 'ccw1', 'cw2'] },
+  4: { type: ['dist', 'up1', 'down1'], num: ['dist', 'up1', 'down1', 'up2', 'down2'], n: ['add', 'sub', 'dist'], p: ['cw1', 'ccw1', 'cw1', 'ccw1', 'cw2', 'xor'], l: ['cw1', 'ccw1', 'cw2', 'xor', 'and'], nShare: 0.3 },
+};
+// The chance, per attribute, that its rule runs down the columns instead of along the rows.
+const COLS_SHARE = { 1: 0, 2: 0, 3: 0, 4: 0.5 };
+// [tier, layout, how many attributes vary]. A tier takes its levels from its recipes in turn.
+const PLAN = [
+  [1, 'centre', 1], [1, 'centre', 2], [1, 'grid4', 1], [1, 'grid9', 1], [1, 'lines', 1], [1, 'lr', 1], [1, 'oi', 1],
+  [2, 'centre', 3], [2, 'grid4', 2], [2, 'grid9', 2], [2, 'lines', 1], [2, 'lr', 2], [2, 'oi', 2],
+  [3, 'grid9', 3], [3, 'grid4', 3], [3, 'lr', 3], [3, 'lr', 4], [3, 'oi', 3], [3, 'oi', 4], [3, 'lines', 1], [3, 'centre', 3],
+  [4, 'grid9', 3], [4, 'rc', 3], [4, 'rc', 4], [4, 'lines', 1], [4, 'oi', 4], [4, 'lr', 5],
+];
+// A level's pattern: the layout and which attributes follow which rule, which way. No two levels share one, in
+// any tier: two levels that only differ in which shapes and shades they use are the same puzzle twice.
+const parts = (lv) => lv.rules.filter((r) => r.k !== 'const').map((r) => lv.layout + ':' + r.c + r.a + '=' + r.k + (r.d ? '|' + r.d : ''));
+const signature = (lv) => parts(lv).sort().join(',');
+// Unique patterns are not enough: a pattern that is another one plus a rule, or one rule turning up again and again,
+// still feels like the same puzzle. So one rule (on one layout) is used at most `cap` times in a set, and within a
+// tier no level's rules may all be found in another level of the same layout.
+const contains = (a, b) => a.every((x) => b.includes(x)); // a's rules all in b
+function fresh(lv, batch, seen, uses, cap) {
+  if (seen.has(signature(lv))) return false;
+  const ps = parts(lv);
+  if (ps.some((x) => (uses.get(x) || 0) >= cap)) return false;
+  return !batch.some((o) => o.layout === lv.layout && (contains(ps, parts(o)) || contains(parts(o), ps)));
+}
+// Two levels in a row should not look alike: same layout and a rule in common.
+const alike = (a, b) => a.layout === b.layout && parts(a).some((x) => parts(b).includes(x));
+
+
+// A set of levels: counts { tier: how many }, in order of tier and within a tier by score. The level bank is
+// buildSet({ 1: 40, 2: 40, 3: 40, 4: 40 }) with the default seed; a test draws a fresh set from a random seed, its
+// recipes taken in a shuffled order (else every short test would open with the same layouts). Returns
+// { levels, report } or throws when a tier runs out of patterns.
+function buildSet(counts, { seed = 90000, cap = 3, shuffled = false, tries = 3000 } = {}) {
+  const levels = [], seen = new Set(), uses = new Map(), report = [];
+  const r = rng(seed);
+  for (const tier of Object.keys(counts).map(Number).sort()) {
+    const batch = [];
+    // Each recipe keeps its own run of seeds. A recipe that finds no new pattern in `tries` seeds has run out and
+    // drops out, and the others fill its place.
+    let recipes = PLAN.filter((p) => p[0] === tier).map(([, layout, vary], pi) => ({ layout, vary, seed: seed + tier * 100000 + pi * 10000, done: false, got: 0 }));
+    if (shuffled) recipes = shuffle(r, recipes);
+    while (batch.length < counts[tier]) {
+      const live = recipes.filter((rc) => !rc.done);
+      if (!live.length) throw new Error(`tier ${tier}: only ${batch.length} different patterns`);
+      for (const rc of live) {
+        if (batch.length === counts[tier]) break;
+        let lv = null;
+        for (let k = 0; k < tries && !lv; k++) {
+          const got = generateLevel({ seed: rc.seed++, layout: rc.layout, vary: rc.vary, kinds: KINDS[tier], cols: COLS_SHARE[tier] });
+          if (got && fresh(got, batch, seen, uses, cap)) lv = got;
+        }
+        if (!lv) { rc.done = true; continue; }
+        seen.add(signature(lv));
+        for (const x of parts(lv)) uses.set(x, (uses.get(x) || 0) + 1);
+        batch.push(Object.assign({ tier }, lv));
+        rc.got++;
+      }
+    }
+    batch.sort((a, b) => a.score - b.score);
+    // In order of score, except that the next level is the easiest of the next dozen that does not look like the
+    // level before it.
+    while (batch.length) {
+      const prev = levels[levels.length - 1];
+      let k = batch.findIndex((lv, i) => i < 12 && !(prev && alike(prev, lv)));
+      if (k < 0) k = 0;
+      levels.push(batch.splice(k, 1)[0]);
+    }
+    report.push(`tier ${tier}: ` + recipes.map((rc) => `${rc.layout}/${rc.vary} ${rc.got}`).join(', '));
+  }
+  return { levels, report };
+}
+
+module.exports = { LAYOUTS, ATTRS, CLASS, RULES, KINDS, TEST_MIX, get, pop, turn, holds, explain, accepts, generateLevel, signature, buildSet };

@@ -4,7 +4,7 @@ Guidance for Claude Code when working in this repository.
 
 ## What this is
 
-Puzzles: several logic puzzles (Queens, Tango, Jugz, Matrix) in one installable PWA, published to GitHub Pages at `/Puzzles/`. No runtime dependencies and no bundler: `scripts/build.js` inlines the shell, the grid kit and every game into a single `index.html`. Playwright is only needed for the icons and the tests.
+Puzzles: several logic puzzles (Queens, Tango, Jugz, Matrix, and Matrix Test) in one installable PWA, published to GitHub Pages at `/Puzzles/`. No runtime dependencies and no bundler: `scripts/build.js` inlines the shell, the grid kit and every game into a single `index.html`. Playwright is only needed for the icons and the tests.
 
 All user-facing text, comments and identifiers are English. British spelling in UI text ("colour").
 
@@ -16,7 +16,7 @@ Three layers:
 2. **Grid kit** (`src/grid/`): for n x n grid puzzles. `Grid.build/fit/cellAt` draw the board on a canvas in whole device pixels (so every line has the same thickness at any density) with a transparent button per cell; `Grid.mini` draws the small example boards in the rules. A game that is not a grid (Jugz, Matrix) skips the kit and draws into its board element any way it likes; the stage is always square. `Rules.card` (in the shell) is the rules card for every game.
 3. **Games** (`games/<id>/`): `engine.js` is plain JS that also runs in Node (rules, solver; `module.exports`). The build wraps each game in its own function scope with the engine's exports as `Engine`, so games never share names; any other `.js` in the folder (`generate.js` aside) is included in that scope before `game.js`. `game.js` holds the game's state and calls `Puzzles.register({...})`. `game.css` scopes its rules with `body[data-game="<id>"]` (tokens) and `[data-for="<id>"]` (its board); a game's tokens must not reuse the shell's names (`--panel`, `--accent`, ...).
 
-Adding a game: a new folder with the files above, its id in `GAMES` in `scripts/build.js`, a shortcut in `manifest.webmanifest`, an entry in `GAMES` in `test/hints.test.js`, and a mention in the description strings (build.js, manifest, README, og.svg).
+A folder may register a second game sharing its scope (Matrix registers Matrix Test from `exam.js`; its shortcut icon is `icon-<id>.svg`). Adding a game: a new folder with the files above, its id in `GAMES` in `scripts/build.js`, a shortcut in `manifest.webmanifest`, an entry in `GAMES` in `test/hints.test.js`, and a mention in the description strings (build.js, manifest, README, og.svg).
 
 ### State and undo
 
@@ -48,6 +48,15 @@ Raven-style matrices: a 3 x 3 grid of panels, the last missing, and eight answer
 - **Uniqueness**: `Engine.accepts` takes an answer when every attribute is either explained by some catalogue rule along the rows or down the columns, or free (no rule holds on the two complete rows or columns, e.g. where the dots sit when the rule is about how many). A level is kept only when the right answer is the one accepted; `verify.py` re-implements this independently, and works out the turns from the geometry rather than copying the tables. A rule added to the generator must be in both catalogues.
 - **Play**: a wrong tap crosses that answer out in red. Hint (one undo step) names the stored rule that crosses out the most open answers, then points at the last one. A star (`matrix.clean`) needs no wrong answer and no hint; the mark (`t` in the snapshot) survives Undo so a guess cannot be taken back.
 
+## Matrix Test
+
+`games/matrix/exam.js`, id `mtest`, its own hub card. A timed test: 25 questions in 20 minutes or 50 in 40, mixed 3/5/9/8 per 25 from easy to expert (`Engine.TEST_MIX`), drawn fresh for every test in the browser by `Engine.buildSet` (shuffled recipes, a rule at most twice). Nothing shows right or wrong until it is handed in (asks first with blanks) or the clock runs out; then each question can be gone through with the right answer and its rules (`whyText`). The score is the number right, per tier; deliberately **not** an IQ, because the questions are not normed. History in `mtest.history` (last 50).
+
+- It uses the shell's hooks for a test (top of `shell.js`): `controls()/press()` replace Undo/Redo/Hint/Restart, `limit()/timeUp()` make the clock count down, `winTitle()` replaces "Solved in" (no best time, no Next), plus `heading`, `bestText`, `explain`, `card` and `ctx.restart`/`ctx.secs`.
+- The snapshot is `{ seed, ans, q, phase }`: the questions are rebuilt from the seed, so a test in progress survives a reload.
+- Drawing and words are in `draw.js`, shared with Matrix (the build includes it first, alphabetically).
+- There is no fixed bank to verify, so CI writes a sample of tests (`test/exam-sample.js`) and runs `verify.py` on it; `test/exam.test.js` takes tests in the browser.
+
 ## PWA
 
 - The manifest has **no `id`**: Chrome resolves `id` against the origin, so `"id": "./"` would clash with every other app on `magnustjerneld.github.io` ("already installed"). Without it the identity is `start_url`, i.e. `/Puzzles/`.
@@ -61,6 +70,8 @@ python3 games/<id>/verify.py   # independent check of a level bank (CI)
 node scripts/build-icons.js    # needs playwright
 node scripts/build.js
 node test/hints.test.js        # follows Hint through all levels of every game (CI); Jugz must take exactly the optimum, Matrix may never cross out the right answer
+node test/exam.test.js         # takes Matrix Test: mix, scoring, hand in, time up, reload (CI)
+node test/exam-sample.js /tmp/exams.json 100 && python3 games/matrix/verify.py /tmp/exams.json   # sampled tests (CI)
 ```
 
 In this cloud environment playwright is global: prefix node with `NODE_PATH=/opt/node22/lib/node_modules`. Test layout changes in a real browser at phone sizes in both orientations (320x640, 360x740, 390x844, 667x375, 844x390): the header row is tight and has overflowed before.

@@ -6,10 +6,11 @@ Logic puzzles for phone and browser, in one installable app that plays offline:
 - **Tango**: fill the board with suns and moons. As many of each in every row and column, never three alike in a row; `=` means the same, `×` means different.
 - **Jugz**: three jugs and no marks on them. Pour from one into another until the first is empty or the second is full, and measure out exactly the amount asked for. Fewest pours for three stars.
 - **Matrix**: a 3 × 3 grid of figures with the last one missing, in the style of the matrix tests used for IQ testing (Raven's progressive matrices, the format of the Mensa admission test). Every row follows the same rules; pick the one of eight answers that completes it. Four tiers, up to Expert: rules down the columns as well, shapes that move and figures that turn, four or five rules at once.
+- **Matrix Test**: 25 questions in 20 minutes or 50 in 40, new every time and mostly hard, scored only when you hand in, like an admission test. Afterwards every question can be gone through with its answer and rules. The score is the number right, not an IQ: the questions have not been normed on people.
 
 Every Queens and Tango level has exactly one solution and can be solved by logic alone; every Jugz level is rated by its shortest solution; every Matrix level has exactly one of its eight answers that fits every rule. **Hint** shows the next step and explains it.
 
-Play: https://magnustjerneld.github.io/Puzzles/ (each game also has its own link: `…/Puzzles/#queens`, `#tango`, `#jugz`, `#matrix`).
+Play: https://magnustjerneld.github.io/Puzzles/ (each game also has its own link: `…/Puzzles/#queens`, `#tango`, `#jugz`, `#matrix`, `#mtest`).
 
 ## Install as an app (PWA)
 
@@ -24,10 +25,11 @@ A service worker precaches the page, icons and fonts on the first visit. Online,
 |---|---|
 | `src/shell/` | The shell: `index.html` (page template), `shell.css`, `shell.js` (hub, routing, header, clock, level picker, rules sheet, status, hint text, undo/redo, saved progress) |
 | `src/grid/` | Grid kit shared by grid puzzles: the canvas board with a button per cell, hint and clash marks, example boards for the rules |
-| `games/<id>/` | One folder per game: `engine.js` (rules and solver, also used in Node), `game.js` (the game in the shell), `game.css`, `levels.json`, `logo.svg` (hub card), `icon.svg` (shortcut icon), `generate.js`, `verify.py`; Jugz adds `vessels.js` (the drawn jugs, glasses and steins) |
+| `games/<id>/` | One folder per game: `engine.js` (rules and solver, also used in Node), `game.js` (the game in the shell), `game.css`, `levels.json`, `logo.svg` (hub card), `icon.svg` (shortcut icon), `generate.js`, `verify.py`; Jugz adds `vessels.js` (the drawn jugs, glasses and steins); Matrix adds `draw.js` and `exam.js` (Matrix Test, registered from the same folder) |
 | `src/sw.template.js` | Service worker; `scripts/build.js` fills in the version and the file list |
 | `scripts/build.js` | Builds `index.html` (everything inlined, one file) and `sw.js` |
 | `scripts/build-icons.js` | Renders `icons/*.svg` and each game's `icon.svg` to PNG (needs playwright) |
+| `test/exam.test.js`, `test/exam-sample.js` | Takes Matrix Test in a headless browser; writes a sample of tests for `verify.py` |
 | `test/hints.test.js` | Follows Hint through every level of every game in a headless browser (for Jugz it must also take exactly the optimum; for Matrix it must never cross out the right answer) |
 | `manifest.webmanifest` | App name, icons and the per-game shortcuts. It deliberately has **no `id`**, see below |
 

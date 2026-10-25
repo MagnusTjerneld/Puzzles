@@ -5,7 +5,11 @@
 # Written apart from engine.js on purpose. Run: python3 games/matrix/verify.py
 import json, sys, os
 
-levels = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'levels.json')))
+# Default: the level bank. With a path: that file, which may also hold a list of sets (sampled Matrix Tests, from
+# test/exam-sample.js), each checked on its own.
+path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), 'levels.json')
+data = json.load(open(path))
+sets = data if data and isinstance(data[0], list) else [data]
 
 # component kind, then the number of values per attribute (n: places or strokes)
 LAYOUTS = {
@@ -135,44 +139,49 @@ def in_range(layout, panel):
     return True
 
 
-bad = 0
-# No two levels may follow the same pattern: layout plus which attributes follow which rule, which way.
-patterns = {}
-for lv in levels:
-    sig = (lv['layout'], tuple(sorted((r['c'], r['a'], r['k'], r.get('d', 'rows')) for r in lv['rules'] if r['k'] != 'const')))
-    patterns.setdefault(sig, []).append(lv['id'])
-for ids in patterns.values():
-    if len(ids) > 1:
-        bad += 1
-        print(ids, ['same pattern of rules'])
-for lv in levels:
-    errs = []
-    layout, cells, options, ans = lv['layout'], lv['cells'], lv['options'], lv['answer']
-    if layout not in LAYOUTS or len(cells) != 8 or len(options) != 8 or not (0 <= ans < 8):
-        errs.append('wrong shape of level')
-    elif not all(in_range(layout, p) for p in cells + options):
-        errs.append('value out of range')
-    else:
-        if len({json.dumps(o) for o in options}) != 8:
-            errs.append('two answers are the same')
-        grid = cells + [options[ans]]
-        for r in lv['rules']:
-            kind = LAYOUTS[layout][r['c']][0]
-            v = [value(kind, p[r['c']], r['a']) for p in grid]
-            lines = [v[0::3], v[1::3], v[2::3]] if r.get('d') == 'cols' else [v[0:3], v[3:6], v[6:9]]
-            ok = dist(lines) if r['k'] == 'dist' else all(triple_rules(r['a'], step_of(layout, r['c'], r['a']))[r['k']](*l) for l in lines)
-            if not ok:
-                errs.append(f"rule {r} does not hold")
-        good = [i for i, o in enumerate(options) if accepted(layout, cells, o)]
-        if good != [ans]:
-            errs.append(f'accepted answers {good}, expected [{ans}]')
-        # every wrong answer must differ from the right one in an attribute some stored rule is about, so Hint
-        # can cross it out with a rule it names
-        for i, o in enumerate(options):
-            if i != ans and not any(value(LAYOUTS[layout][r['c']][0], o[r['c']], r['a']) != value(LAYOUTS[layout][r['c']][0], options[ans][r['c']], r['a']) for r in lv['rules']):
-                errs.append(f'answer {i} breaks no stored rule')
-    if errs:
-        bad += 1
-        print(lv['id'], errs)
-print('matrix:', len(levels), 'levels, errors:', bad)
+def check(levels):
+    bad = 0
+    # No two levels may follow the same pattern: layout plus which attributes follow which rule, which way.
+    patterns = {}
+    for lv in levels:
+        sig = (lv['layout'], tuple(sorted((r['c'], r['a'], r['k'], r.get('d', 'rows')) for r in lv['rules'] if r['k'] != 'const')))
+        patterns.setdefault(sig, []).append(lv['id'])
+    for ids in patterns.values():
+        if len(ids) > 1:
+            bad += 1
+            print(ids, ['same pattern of rules'])
+    for lv in levels:
+        errs = []
+        layout, cells, options, ans = lv['layout'], lv['cells'], lv['options'], lv['answer']
+        if layout not in LAYOUTS or len(cells) != 8 or len(options) != 8 or not (0 <= ans < 8):
+            errs.append('wrong shape of level')
+        elif not all(in_range(layout, p) for p in cells + options):
+            errs.append('value out of range')
+        else:
+            if len({json.dumps(o) for o in options}) != 8:
+                errs.append('two answers are the same')
+            grid = cells + [options[ans]]
+            for r in lv['rules']:
+                kind = LAYOUTS[layout][r['c']][0]
+                v = [value(kind, p[r['c']], r['a']) for p in grid]
+                lines = [v[0::3], v[1::3], v[2::3]] if r.get('d') == 'cols' else [v[0:3], v[3:6], v[6:9]]
+                ok = dist(lines) if r['k'] == 'dist' else all(triple_rules(r['a'], step_of(layout, r['c'], r['a']))[r['k']](*l) for l in lines)
+                if not ok:
+                    errs.append(f"rule {r} does not hold")
+            good = [i for i, o in enumerate(options) if accepted(layout, cells, o)]
+            if good != [ans]:
+                errs.append(f'accepted answers {good}, expected [{ans}]')
+            # every wrong answer must differ from the right one in an attribute some stored rule is about, so Hint
+            # can cross it out with a rule it names
+            for i, o in enumerate(options):
+                if i != ans and not any(value(LAYOUTS[layout][r['c']][0], o[r['c']], r['a']) != value(LAYOUTS[layout][r['c']][0], options[ans][r['c']], r['a']) for r in lv['rules']):
+                    errs.append(f'answer {i} breaks no stored rule')
+        if errs:
+            bad += 1
+            print(lv['id'], errs)
+    return bad
+
+
+bad = sum(check(levels) for levels in sets)
+print('matrix:', sum(len(x) for x in sets), 'levels in', len(sets), 'set' + ('s' if len(sets) > 1 else '') + ', errors:', bad)
 sys.exit(1 if bad else 0)

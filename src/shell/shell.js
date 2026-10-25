@@ -26,6 +26,16 @@
 //   badge(level)                 a short text under the level's number in the picker (e.g. stars)
 //   onSolved()                   called once when a level becomes solved, before the status row is drawn
 //   winNote()                    a line under "Solved in ..." (e.g. stars and the optimum)
+// A game that is a test rather than a puzzle (Matrix Test) can take over more of the frame:
+//   heading(level)               the big line in the header instead of "Level N"
+//   bestText(level)              the small line under the clock instead of "Best mm:ss"
+//   limit(level)                 seconds allowed: the clock counts down, and timeUp() is called once it reaches zero
+//   controls()                   [{ id, label, primary?, disabled? }] in place of Undo, Redo, Hint and Restart;
+//                                press(id) is called on a tap. Asked again after every change.
+//   explain()                    { label, text } for the hint box while no hint shows, or null
+//   winTitle()                   the line in place of "Solved in ..."; no best time is kept and there is no Next
+//                                level button (the game offers its own way on through controls())
+//   card()                       { prog, go } for the hub card in place of "N of M solved" and "Continue · Level N"
 //
 // Progress is stored per game under "<id>.solved" ({ levelId: best seconds, or null when solved without a time }),
 // "<id>.cur" (level index) and "<id>.rulesSeen", the same keys the standalone games used, so progress carried over
@@ -77,7 +87,11 @@ const Puzzles = (() => {
       record(s) { commit(s); },
       // Repaint without an undo step (during a drag, or when the game's own display changes).
       refresh: () => update(),
+      // A new attempt at the level in play: fresh state, clock and history.
+      restart: () => load(idx),
       get finished() { return finished; },
+      // Seconds on the clock for this attempt.
+      get secs() { return secs; },
     };
   }
 
@@ -115,14 +129,23 @@ const Puzzles = (() => {
   function update() {
     game.render();
     const ex = $('explain');
-    ex.hidden = !hintText;
     ex.innerHTML = '';
-    if (hintText) { const b = document.createElement('b'); b.textContent = hintLabel; ex.append(b, hintText); }
+    const shown = hintText ? { label: hintLabel, text: hintText } : game.explain ? game.explain() : null;
+    ex.hidden = !shown;
+    if (shown) { const b = document.createElement('b'); b.textContent = shown.label; ex.append(b, shown.text); }
     const was = finished;
     finished = game.solved();
     game.ctx.board.classList.toggle('done', finished);
     const st = $('status');
-    if (finished) {
+    if (finished && game.winTitle) {
+      // A test: it is over, not solved in a time to beat. Marked as taken; the game keeps its own results.
+      if (!isSolved(lv.id)) { solvedMap[lv.id] = null; store.set(key('solved'), solvedMap); }
+      if (!was) { if (game.onSolved) game.onSolved(); askPersist(); }
+      st.innerHTML = '<div class="win"><div><strong id="winTitle"></strong><small class="note" id="winNote"></small></div></div>';
+      $('winTitle').textContent = game.winTitle();
+      $('winNote').textContent = game.winNote ? game.winNote() : '';
+      showBest();
+    } else if (finished) {
       const best = bestOf(lv.id);
       if (best == null || secs < best) { solvedMap[lv.id] = secs; store.set(key('solved'), solvedMap); showBest(); }
       if (!was) { if (game.onSolved) game.onSolved(); askPersist(); }
@@ -139,6 +162,7 @@ const Puzzles = (() => {
     }
     $('undo').disabled = !undoSt.length; $('redo').disabled = !redoSt.length;
     $('hint').disabled = finished;
+    showControls();
     savePlay();
   }
 
@@ -162,13 +186,30 @@ const Puzzles = (() => {
     } catch (e) {}
   }
 
-  function showBest() { const b = bestOf(lv.id); $('best').textContent = b != null ? 'Best ' + fmt(b) : ''; }
+  function showBest() { const b = bestOf(lv.id); $('best').textContent = game.bestText ? game.bestText(lv) : b != null ? 'Best ' + fmt(b) : ''; }
+  // The clock counts up, or down to zero for a game with a time limit.
+  function showClock() { const lim = game.limit ? game.limit(lv) : 0; $('timer').textContent = fmt(lim ? Math.max(0, lim - secs) : secs); }
+
+  // The button bar: Undo, Redo, Hint and Restart, or the game's own controls.
+  function showControls() {
+    const own = !!game.controls, ctl = $('ctl');
+    $('bar').hidden = own; ctl.hidden = !own;
+    if (!own) return;
+    ctl.innerHTML = '';
+    for (const c of game.controls()) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.id = c.id; b.textContent = c.label; b.disabled = !!c.disabled;
+      if (c.primary) b.className = 'primary';
+      ctl.appendChild(b);
+    }
+  }
+  $('ctl').onclick = (e) => { const b = e.target.closest('button'); if (b && game.press) game.press(b.dataset.id); };
 
   function setHeader() {
-    $('title').firstChild.nodeValue = 'Level ' + lv.id;
+    $('title').firstChild.nodeValue = game.heading ? game.heading(lv) : 'Level ' + lv.id;
     $('sub').textContent = game.subtitle(lv);
     showBest();
-    $('timer').textContent = fmt(secs);
+    showClock();
   }
 
   function load(i) {
@@ -223,13 +264,14 @@ const Puzzles = (() => {
     for (const g of games) {
       const done = Object.keys(store.get(g.id + '.solved', {})).length;
       const cur = Math.min(Math.max(store.get(g.id + '.cur', 0), 0), g.levels.length - 1);
+      const own = g.card ? g.card() : null;
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'card'; b.style.setProperty('--accent', g.accent);
       b.innerHTML = g.logo + `<span class="cname"></span><span class="ctag"></span><span class="cprog"></span><span class="cgo"></span>`;
       b.querySelector('.cname').textContent = g.name;
       b.querySelector('.ctag').textContent = g.tagline;
-      b.querySelector('.cprog').textContent = `${done} of ${g.levels.length} solved`;
-      b.querySelector('.cgo').textContent = done || cur ? 'Continue · Level ' + g.levels[cur].id : 'Play';
+      b.querySelector('.cprog').textContent = own ? own.prog : `${done} of ${g.levels.length} solved`;
+      b.querySelector('.cgo').textContent = own ? own.go : done || cur ? 'Continue · Level ' + g.levels[cur].id : 'Play';
       b.onclick = () => { cardClicked = true; location.hash = g.id; };
       box.appendChild(b);
     }
@@ -268,7 +310,7 @@ const Puzzles = (() => {
   $('reset').onclick = () => {
     if (finished) {
       game.reset(); undoSt = []; redoSt = []; secs = 0; ticking = false; prevBest = bestOf(lv.id); clearHint(); update();
-      $('timer').textContent = fmt(0);
+      showClock();
     } else if (game.started()) { const s = game.snapshot(); game.reset(); commit(s); }
   };
   $('hint').onclick = () => {
@@ -342,7 +384,9 @@ const Puzzles = (() => {
     if (!game || finished || document.hidden || hubShowing() || !$('picker').hidden || !$('rules').hidden) return;
     if (!ticking && !game.started()) return;
     ticking = true;
-    secs++; $('timer').textContent = fmt(secs);
+    secs++; showClock();
+    const lim = game.limit ? game.limit(lv) : 0;
+    if (lim && secs >= lim && game.timeUp) game.timeUp();
   }, 1000);
 
   function start() {
@@ -363,6 +407,8 @@ const Puzzles = (() => {
     get finished() { return finished; },
     get game() { return game; },
     get hintText() { return hintText; },
+    get secs() { return secs; },
+    set secs(v) { secs = v; showClock(); },
   };
 
   return { register, start, debug };
