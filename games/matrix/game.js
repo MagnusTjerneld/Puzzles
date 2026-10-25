@@ -2,7 +2,7 @@
 // Every row follows the same rules. Runs inside the Puzzles shell (src/shell/shell.js). Engine is
 // games/matrix/engine.js: the layouts, the rules and the judge the levels were generated with.
 const LEVELS = __LEVELS__;
-const TIER_NAME = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
+const TIER_NAME = { 1: 'Easy', 2: 'Medium', 3: 'Hard', 4: 'Expert' };
 const LETTER = 'ABCDEFGH';
 
 // ---------- Drawing ----------
@@ -19,8 +19,11 @@ const SLOT = {
   r: { x: 73, y: 50, r: [8, 12.5, 17, 21.5], w: 2.2 },
   o: { x: 50, y: 50, r: [40], w: 2.4 },
   i: { x: 50, y: 50, r: [8, 11.5, 15, 18.5], w: 2.2 },
+  m: { x: 50, y: 50, r: [8, 12, 16, 20], w: 2.2 },
 };
 const GRID = { 4: { at: [28, 72], r: [9, 13, 17], w: 2 }, 9: { at: [20, 50, 80], r: [6, 8.5, 11], w: 1.6 } };
+// The ring of eight round the frame, clockwise from the top left corner, with room for a shape in the middle.
+const RING = { at: [[16, 16], [50, 16], [84, 16], [84, 50], [84, 84], [50, 84], [16, 84], [16, 50]], r: [5, 6.5, 8], w: 1.5 };
 // The strokes of a line figure, by bit: the four sides, both diagonals, the two middle lines, a ring in the centre.
 const STROKES = ['M18 18H82', 'M82 18V82', 'M18 82H82', 'M18 18V82', 'M18 18L82 82', 'M82 18L18 82', 'M50 18V82', 'M18 50H82'];
 
@@ -43,6 +46,8 @@ function panelBody(layout, p) {
     if (spec.kind === 'shape') {
       const s = SLOT[spec.slot];
       h += shape(v[0], s.x, s.y, s.r[v[1]], SHADE[v[2]], s.w);
+    } else if (spec.ring) {
+      RING.at.forEach(([x, y], k) => { if (v[0] >> k & 1) h += shape(v[1], x, y, RING.r[v[2]], SHADE[v[3]], RING.w); });
     } else if (spec.kind === 'grid') {
       const g = GRID[spec.n], side = g.at.length;
       for (let k = 0; k < spec.n; k++) if (v[0] >> k & 1) h += shape(v[1], g.at[k % side], g.at[(k / side) | 0], g.r[v[2]], SHADE[v[3]], g.w);
@@ -104,46 +109,54 @@ function tap(i) {
 
 // ---------- Hint ----------
 const ATTR_WORD = { t: 'shape', s: 'size', c: 'shade', n: 'count', p: 'places', l: 'lines' };
-const SIDE_WORD = { l: 'left', r: 'right', o: 'outer', i: 'inner' };
+const SIDE_WORD = { l: 'left', r: 'right', o: 'outer', i: 'inner', m: 'middle' };
 const SHAPE_NAME = ['triangle', 'square', 'pentagon', 'hexagon', 'circle'];
 const SHADE_NAME = ['white', 'light grey', 'grey', 'dark grey', 'black'];
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const and = (xs) => (xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1]);
 const valueOf = (p, ru) => Engine.get(Engine.LAYOUTS[lv.layout][ru.c], p[ru.c], ru.a);
 
-// What rule ru says, in words, as a full sentence.
+// What rule ru says, in words, as a full sentence. Rules run along the rows, or (ru.d === 'cols') down the columns.
 function ruleText(ru) {
-  const spec = Engine.LAYOUTS[lv.layout][ru.c], a = ru.a, k = ru.k;
-  const label = cap(spec.kind === 'shape' && spec.slot !== 'c' ? SIDE_WORD[spec.slot] + ' ' + ATTR_WORD[a] : ATTR_WORD[a]);
-  const row = [0, 1, 2].map((i) => valueOf(lv.cells[i], ru)).sort((x, y) => x - y);
+  const spec = Engine.LAYOUTS[lv.layout][ru.c], a = ru.a, k = ru.k, cols = ru.d === 'cols';
+  const label = cap(spec.ring ? 'ring ' + ATTR_WORD[a] : spec.kind === 'shape' && spec.slot !== 'c' ? SIDE_WORD[spec.slot] + ' ' + ATTR_WORD[a] : ATTR_WORD[a]);
+  const line = cols ? 'column' : 'row', along = cols ? 'down the column' : 'along the row';
+  const first = (cols ? [0, 3, 6] : [0, 1, 2]).map((i) => valueOf(lv.cells[i], ru)).sort((x, y) => x - y);
   const steps = (one, many) => ({ up1: `one ${one}`, down1: `one ${many}`, up2: `two ${one}`, down2: `two ${many}` })[k];
+  // Combining rules talk about the first, second and third panel: say which way they are counted.
+  const each = cols ? 'in each column, ' : '';
+  const way = k === 'ccw1' ? 'anticlockwise' : 'clockwise';
   let s;
-  if (k === 'const') s = { p: 'the same places are filled in every panel of a row', l: 'the same figure all along each row' }[a] || 'the same all along each row';
+  if (k === 'const') s = { p: `the same places are filled in every panel of a ${line}`, l: `the same figure all ${along.replace('the', 'each')}` }[a] || `the same all ${along.replace('the', 'each')}`;
   else if (k === 'dist') {
     s = {
-      t: `every row has a ${and(row.map((x) => SHAPE_NAME[x]))}`,
-      s: 'every row has the same three sizes',
-      c: `every row has ${and(row.map((x) => SHADE_NAME[x]))}`,
-      n: `every row has ${and(row.map(String))} of them`,
-      p: 'every row uses the same three patterns',
-      l: 'every row uses the same three figures',
+      t: `every ${line} has a ${and(first.map((x) => SHAPE_NAME[x]))}`,
+      s: `every ${line} has the same three sizes`,
+      c: `every ${line} has ${and(first.map((x) => SHADE_NAME[x]))}`,
+      n: `every ${line} has ${and(first.map(String))} of them`,
+      p: `every ${line} uses the same three patterns`,
+      l: `every ${line} uses the same three figures`,
     }[a] + ', each time in a new order';
-  } else if (a === 't') s = `${k === 'up1' ? 'one more corner' : 'one corner fewer'} at each step along the row`;
-  else if (a === 's') s = `${k.startsWith('up') ? 'grows' : 'shrinks'} by ${k.endsWith('1') ? 'one size' : 'two sizes'} at each step along the row`;
-  else if (a === 'c') s = `${k.endsWith('1') ? 'one shade' : 'two shades'} ${k.startsWith('up') ? 'darker' : 'lighter'} at each step along the row`;
+  } else if (k === 'cw1' || k === 'ccw1' || k === 'cw2') {
+    if (a === 'l') s = `the figure turns ${k === 'cw2' ? 'half way round' : 'a quarter ' + way} at each step ${along}`;
+    else if (spec.n === 4) s = `the filled places turn ${k === 'cw2' ? 'half way round' : 'a quarter ' + way} at each step ${along}`;
+    else s = `the shapes move ${k === 'cw2' ? 'two places' : 'one place'} ${way} round the ${spec.ring ? 'ring' : 'frame'} at each step ${along}` + (spec.n === 9 ? ' (the centre stays)' : '');
+  } else if (a === 't') s = `${k === 'up1' ? 'one more corner' : 'one corner fewer'} at each step ${along}`;
+  else if (a === 's') s = `${k.startsWith('up') ? 'grows' : 'shrinks'} by ${k.endsWith('1') ? 'one size' : 'two sizes'} at each step ${along}`;
+  else if (a === 'c') s = `${k.endsWith('1') ? 'one shade' : 'two shades'} ${k.startsWith('up') ? 'darker' : 'lighter'} at each step ${along}`;
   else if (a === 'n') {
     s = {
-      add: 'the third panel has as many as the first two together',
-      sub: 'the third panel has as many as the first, less the second',
-    }[k] || `${steps('more', 'fewer')} at each step along the row`;
+      add: each + 'the third panel has as many as the first two together',
+      sub: each + 'the third panel has as many as the first, less the second',
+    }[k] || `${steps('more', 'fewer')} at each step ${along}`;
   } else if (a === 'p') {
-    s = {
+    s = each + {
       or: 'the third panel fills every place that is filled in the first or the second',
       and: 'the third panel fills only the places filled in both the first and the second',
       xor: 'lay the first two panels on top of each other: a place filled in both goes empty, a place filled in one stays',
     }[k];
   } else {
-    s = {
+    s = each + {
       or: 'the third figure is the first two laid on top of each other',
       and: 'the third figure keeps only the lines the first two share',
       xor: 'lay the first two figures on top of each other: lines in both cancel out, the rest stay',
@@ -202,7 +215,7 @@ function rulesHtml() {
   return [
     card('01', 'The goal', 'Every row of the grid follows the same rules. Work them out and pick the answer that completes the last row. Each level has exactly one right answer.',
       strip('centre', goal, 3, 'A grid of shapes with the last one missing')),
-    card('02', 'Look along the rows', 'Shape, size, shade and count change in steps, come back in a new order, or stay the same. A figure can be made of several parts, each with its own rule.',
+    card('02', 'Look along the rows', 'Shape, size, shade and count change in steps, come back in a new order, or stay the same. A figure can be made of several parts, each with its own rule. In the hardest levels a rule can run down the columns instead, and shapes can move round the frame or turn.',
       strip('centre', [[[1, 0, 1]], [[1, 2, 1]], [[1, 4, 1]]], 3, 'A square that grows at each step')),
     card('03', 'Count', 'Sometimes it is how many there are, or which places are filled, that follows the rule.',
       strip('grid4', [[[1, 4, 1, 4]], [[3, 4, 1, 4]], [[7, 4, 1, 4]]], 3, 'One, two, then three dots')),
@@ -220,9 +233,9 @@ Puzzles.register({
   logo: __LOGO__,
   levels: LEVELS,
   subtitle: (l) => TIER_NAME[l.tier],
-  legend: '<span class="t1"><i></i>Easy</span><span class="t2"><i></i>Medium</span><span class="t3"><i></i>Hard</span>',
+  legend: '<span class="t1"><i></i>Easy</span><span class="t2"><i></i>Medium</span><span class="t3"><i></i>Hard</span><span class="t4"><i></i>Expert</span>',
   levelClass: (l) => 't' + l.tier,
-  sections: () => [1, 2, 3].map((k) => ({ title: TIER_NAME[k], items: LEVELS.filter((l) => l.tier === k) })),
+  sections: () => [1, 2, 3, 4].map((k) => ({ title: TIER_NAME[k], items: LEVELS.filter((l) => l.tier === k) })),
   badge: (l) => (clean[l.id] ? '★' : ''),
   init,
   load(l) {

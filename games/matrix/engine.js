@@ -18,13 +18,24 @@
 //   lines [l]           bitmask of the strokes drawn
 // The numbers say how many values an attribute can take (shapes: triangle, square, pentagon, hexagon, circle;
 // shades: white to black). n is the number of places in a grid or strokes in a figure.
+// turn: where each place or stroke goes when the figure turns one step clockwise. A 2 x 2 grid turns a quarter, a
+// 3 x 3 grid moves its outer eight places one place round the frame (the centre stays), a ring moves one place, and
+// a line figure turns a quarter (the sides go round, the diagonals and the middle lines swap, the ring stays).
+const TURN = {
+  4: [1, 3, 0, 2],
+  9: [1, 2, 5, 0, 4, 8, 3, 6, 7],
+  8: [1, 2, 3, 4, 5, 6, 7, 0],
+  lines: [1, 2, 3, 0, 5, 4, 7, 6, 8],
+};
 const LAYOUTS = {
   centre: [{ kind: 'shape', slot: 'c', t: 5, s: 5, c: 5 }],
   lr: [{ kind: 'shape', slot: 'l', t: 5, s: 4, c: 5 }, { kind: 'shape', slot: 'r', t: 5, s: 4, c: 5 }],
   oi: [{ kind: 'shape', slot: 'o', t: 5, s: 1, c: 3 }, { kind: 'shape', slot: 'i', t: 5, s: 4, c: 5 }],
-  grid4: [{ kind: 'grid', n: 4, t: 5, s: 3, c: 5 }],
-  grid9: [{ kind: 'grid', n: 9, t: 5, s: 3, c: 5 }],
-  lines: [{ kind: 'lines', n: 9 }],
+  grid4: [{ kind: 'grid', n: 4, t: 5, s: 3, c: 5, turn: TURN[4] }],
+  grid9: [{ kind: 'grid', n: 9, t: 5, s: 3, c: 5, turn: TURN[9] }],
+  lines: [{ kind: 'lines', n: 9, turn: TURN.lines }],
+  // Eight small shapes on a ring round the frame, and one shape in the middle.
+  rc: [{ kind: 'grid', n: 8, ring: true, t: 5, s: 3, c: 5, turn: TURN[8] }, { kind: 'shape', slot: 'm', t: 5, s: 4, c: 5 }],
 };
 // The attributes of each kind of component. In a grid, n is the number of filled places and p which ones.
 const ATTRS = { shape: ['t', 's', 'c'], grid: ['n', 'p', 't', 's', 'c'], lines: ['l'] };
@@ -40,15 +51,37 @@ function get(spec, v, a) {
 
 // ---------- Rules ----------
 // The catalogue the judge knows. Steps go up or down by one or two; add and sub make the third value from the first
-// two; dist puts the same three values in every row, in a new order; or, and, xor and minus combine two sets.
+// two; dist puts the same three values in every row, in a new order; or, and, xor and minus combine two sets;
+// cw1, ccw1 and cw2 turn a set one step clockwise, one step anticlockwise or two steps at each panel.
 const RULES = {
   num: ['const', 'up1', 'down1', 'up2', 'down2', 'add', 'sub', 'dist'],
   type: ['const', 'up1', 'down1', 'up2', 'down2', 'dist'],
-  set: ['const', 'dist', 'or', 'and', 'xor', 'minus'],
+  set: ['const', 'dist', 'or', 'and', 'xor', 'minus', 'cw1', 'ccw1', 'cw2'],
 };
+const TURNS = { cw1: 1, ccw1: -1, cw2: 2 };
+// How many steps of perm make a full turn (the least common multiple of its cycles): 8 for the frame of a 3 x 3
+// grid, 4 for a line figure. Negative steps go the other way.
+function period(perm) {
+  const gcd = (x, y) => (y ? gcd(y, x % y) : x);
+  const seen = new Set();
+  let p = 1;
+  for (let i = 0; i < perm.length; i++) {
+    let len = 0;
+    for (let j = i; !seen.has(j); j = perm[j]) { seen.add(j); len++; }
+    if (len) p = (p * len) / gcd(p, len);
+  }
+  return p;
+}
+// The set m turned by `times` steps of perm.
+function turn(m, perm, times) {
+  const n = period(perm), k = ((times % n) + n) % n;
+  for (let i = 0; i < k; i++) { let out = 0; for (let b = 0; b < perm.length; b++) if (m >> b & 1) out |= 1 << perm[b]; m = out; }
+  return m;
+}
 const STEP = { up1: 1, down1: -1, up2: 2, down2: -2 };
 
-function tripleOk(k, a, b, c) {
+function tripleOk(k, a, b, c, perm) {
+  if (k in TURNS) return !!perm && b === turn(a, perm, TURNS[k]) && c === turn(b, perm, TURNS[k]);
   switch (k) {
     case 'const': return a === b && b === c;
     case 'add': return c === a + b;
@@ -61,36 +94,37 @@ function tripleOk(k, a, b, c) {
   }
 }
 // Does rule k hold on every one of these lines (each three values)?
-function holds(k, lines) {
+function holds(k, lines, perm) {
   if (k === 'dist') {
     const key = (t) => t.slice().sort((x, y) => x - y).join(',');
     return lines.every((t) => new Set(t).size === 3 && key(t) === key(lines[0]));
   }
-  return lines.every((t) => tripleOk(k, t[0], t[1], t[2]));
+  return lines.every((t) => tripleOk(k, t[0], t[1], t[2], perm));
 }
 const ROWS = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
 const COLS = [[0, 3, 6], [1, 4, 7], [2, 5, 8]];
 const take = (v, ls) => ls.map((l) => l.map((i) => v[i]));
 
 // The rule that explains nine values along the rows or down the columns, or null.
-function explain(cls, v) {
+function explain(cls, v, perm) {
   for (const k of RULES[cls]) {
-    if (holds(k, take(v, ROWS))) return { k, dir: 'rows' };
-    if (holds(k, take(v, COLS))) return { k, dir: 'cols' };
+    if (holds(k, take(v, ROWS), perm)) return { k, dir: 'rows' };
+    if (holds(k, take(v, COLS), perm)) return { k, dir: 'cols' };
   }
   return null;
 }
 // An attribute is free when no rule holds on the two complete rows, nor on the two complete columns: nothing in the
 // matrix pins it down (where the shapes sit in a grid whose rule is about how many there are, for instance).
-function free(cls, v) {
-  return !RULES[cls].some((k) => holds(k, take(v, ROWS.slice(0, 2))) || holds(k, take(v, COLS.slice(0, 2))));
+function free(cls, v, perm) {
+  return !RULES[cls].some((k) => holds(k, take(v, ROWS.slice(0, 2)), perm) || holds(k, take(v, COLS.slice(0, 2)), perm));
 }
 // cells: the eight panels shown; option: a ninth. True when every attribute is free or explained by a rule.
 function accepts(layout, cells, option) {
   return LAYOUTS[layout].every((spec, ci) => ATTRS[spec.kind].every((a) => {
     const v = cells.map((p) => get(spec, p[ci], a));
     v.push(get(spec, option[ci], a));
-    return free(CLASS[a], v) || !!explain(CLASS[a], v);
+    const perm = CLASS[a] === 'set' ? spec.turn : null;
+    return free(CLASS[a], v, perm) || !!explain(CLASS[a], v, perm);
   }));
 }
 
@@ -143,11 +177,15 @@ function numValues(r, k, lo, hi) {
     return a + 2 * d >= lo && a + 2 * d <= hi ? [a, a + d, a + 2 * d] : null;
   }, () => (hi - lo >= 2 ? shuffle(r, range(lo, hi)).slice(0, 3) : null));
 }
-function setValues(r, k, bits, lo, hi) {
+function setValues(r, k, bits, lo, hi, perm) {
   const rand = () => { for (;;) { const m = int(r, 1, (1 << bits) - 1), n = pop(m); if (n >= lo && n <= hi) return m; } };
   return rows3(r, k, () => {
     const a = rand(), b = rand();
     if (k === 'const') return [a, a, a];
+    if (k in TURNS) {
+      const b2 = turn(a, perm, TURNS[k]), c2 = turn(b2, perm, TURNS[k]);
+      return b2 !== a && c2 !== a && c2 !== b2 ? [a, b2, c2] : null;
+    }
     let c;
     if (k === 'or') c = a | b;
     else if (k === 'and') c = a & b;
@@ -161,22 +199,30 @@ function randomMask(r, bits, n) {
 }
 
 // Grids and figures: how many places or strokes a random set has.
-const SET_SIZE = { 4: [1, 3], 9: [2, 5], lines: [2, 4] };
+const SET_SIZE = { 4: [1, 3], 8: [1, 3], 9: [2, 5], lines: [2, 4] };
+// A rule down the columns is made as a rule along the rows and transposed.
+const T9 = [0, 3, 6, 1, 4, 7, 2, 5, 8];
+const transpose = (v) => T9.map((i) => v[i]);
 
-// One component across the nine panels. plan: { attribute: rule } for the attributes that vary, the rest are const.
-// Returns { vals: [9 component arrays], rules: [{ a, k }] } or null.
-function genComponent(r, spec, plan) {
+// One component across the nine panels. plan: { attribute: rule } for the attributes that vary, the rest are const;
+// dirs: { attribute: 'cols' } for the rules that run down the columns.
+// Returns { vals: [9 component arrays], rules: [{ a, k, d? }] } or null.
+function genComponent(r, spec, plan, dirs) {
   const rules = [];
+  const orient = (a, k, v) => {
+    const ru = { a, k };
+    if (dirs[a] === 'cols') ru.d = 'cols';
+    rules.push(ru);
+    return v && ru.d ? transpose(v) : v;
+  };
   const attr = (a, dom, lo = 0) => {
     const k = plan[a] || 'const';
-    rules.push({ a, k });
     // Shapes in steps go triangle, square, pentagon, hexagon: one more corner each; the circle has none to count.
-    return numValues(r, k, lo, a === 't' && k !== 'const' && k !== 'dist' ? 3 : dom - 1 + lo);
+    return orient(a, k, numValues(r, k, lo, a === 't' && k !== 'const' && k !== 'dist' ? 3 : dom - 1 + lo));
   };
   if (spec.kind === 'lines') {
     const k = plan.l || 'const';
-    rules.push({ a: 'l', k });
-    const l = setValues(r, k, spec.n, ...SET_SIZE.lines);
+    const l = orient('l', k, setValues(r, k, spec.n, ...SET_SIZE.lines, spec.turn));
     return l && { vals: l.map((m) => [m]), rules };
   }
   if (spec.kind === 'shape') {
@@ -185,24 +231,25 @@ function genComponent(r, spec, plan) {
   }
   let p;
   if (plan.n) {
-    rules.push({ a: 'n', k: plan.n });
-    const n = numValues(r, plan.n, 1, spec.n);
+    const n = orient('n', plan.n, numValues(r, plan.n, 1, spec.n));
     p = n && n.map((x) => randomMask(r, spec.n, x));
   } else {
-    rules.push({ a: 'p', k: plan.p || 'const' });
-    p = setValues(r, plan.p || 'const', spec.n, ...SET_SIZE[spec.n]);
+    p = orient('p', plan.p || 'const', setValues(r, plan.p || 'const', spec.n, ...SET_SIZE[spec.n], spec.turn));
   }
   const t = attr('t', spec.t), s = attr('s', spec.s), c = attr('c', spec.c);
   return p && t && s && c && { vals: p.map((_, i) => [p[i], t[i], s[i], c[i]]), rules };
 }
 
 // How hard each rule is to see, for sorting levels within a tier.
-const WEIGHT = { const: 0, dist: 1, up1: 1, down1: 1, up2: 1.4, down2: 1.4, add: 2, sub: 2.2, or: 1.3, and: 1.8, xor: 2.2, minus: 2.2 };
-const BASE = { centre: 0, grid4: 0.5, lines: 0.5, grid9: 1, lr: 1.5, oi: 1.5 };
+const WEIGHT = { const: 0, dist: 1, up1: 1, down1: 1, up2: 1.4, down2: 1.4, add: 2, sub: 2.2, or: 1.3, and: 1.8, xor: 2.2, minus: 2.2, cw1: 2, ccw1: 2, cw2: 1.8 };
+const BASE = { centre: 0, grid4: 0.5, lines: 0.5, grid9: 1, lr: 1.5, oi: 1.5, rc: 1.5 };
+const COLS_WEIGHT = 0.6; // a rule that runs down the columns among rules along the rows
 
-// opts: { seed, layout, vary (how many attributes follow a rule other than const), kinds: { type, num, n, p, l } }
+// opts: { seed, layout, vary (how many attributes follow a rule other than const), kinds: { type, num, n, p, l,
+//   nShare (how often a grid's rule is about the count rather than the places; 0.5 by default) },
+//   cols (the chance that a rule runs down the columns instead of along the rows; 0 by default) }
 // Returns a level { layout, score, cells, options, answer, rules } or null when this seed gives nothing good.
-function generateLevel({ seed, layout, vary, kinds }) {
+function generateLevel({ seed, layout, vary, kinds, cols = 0 }) {
   const r = rng(seed), specs = LAYOUTS[layout];
   // The attributes that can vary: [component, attribute]; a grid's count and places are one choice ('np').
   const slots = [];
@@ -217,18 +264,23 @@ function generateLevel({ seed, layout, vary, kinds }) {
   const plans = specs.map(() => ({}));
   for (const [ci, a] of chosen) {
     if (a === 'np') {
-      const mode = kinds.n && kinds.p ? (r() < 0.5 ? 'n' : 'p') : kinds.n ? 'n' : 'p';
+      const mode = kinds.n && kinds.p ? (r() < (kinds.nShare ?? 0.5) ? 'n' : 'p') : kinds.n ? 'n' : 'p';
       plans[ci][mode] = pick(r, kinds[mode]);
     } else if (a === 'l') plans[ci].l = pick(r, kinds.l);
     else plans[ci][a] = pick(r, a === 't' ? kinds.type : kinds.num);
   }
   // A dist of sizes needs three sizes; the outer shape has one.
-  const comps = specs.map((spec, ci) => genComponent(r, spec, plans[ci]));
+  const dirs = specs.map((spec) => {
+    const d = {};
+    for (const a of ATTRS[spec.kind]) if (cols && r() < cols) d[a] = 'cols';
+    return d;
+  });
+  const comps = specs.map((spec, ci) => genComponent(r, spec, plans[ci], dirs[ci]));
   if (comps.some((c) => !c)) return null;
   const panels = range(0, 8).map((i) => comps.map((c) => c.vals[i]));
   const cells = panels.slice(0, 8), answer = panels[8];
   const rules = [];
-  comps.forEach((c, ci) => c.rules.forEach((ru) => rules.push({ c: ci, a: ru.a, k: ru.k })));
+  comps.forEach((c, ci) => c.rules.forEach((ru) => rules.push(Object.assign({ c: ci }, ru))));
   if (!accepts(layout, cells, answer)) return null;
 
   // ---------- The eight answers ----------
@@ -247,8 +299,22 @@ function generateLevel({ seed, layout, vary, kinds }) {
     for (const ru of cands) {
       if (splits.length === 3) break;
       const spec = specs[ru.c], key = ru.c + ru.a, x = get(spec, answer[ru.c], ru.a);
+      if (CLASS[ru.a] === 'set' && !used.has(key) && r() < 0.6) {
+        // The likeliest mistakes about a whole set: turned the wrong way or not at all, combined the wrong way,
+        // or a neighbour copied. Comes before any flips on the same attribute, so the flips apply on top of it.
+        const m = (i) => panels[i][ru.c][0];
+        const alts = [m(7), m(5), m(6) | m(7), m(6) ^ m(7), m(6) & m(7), m(2) | m(5), m(2) ^ m(5), m(2) & m(5)];
+        if (spec.turn) alts.push(turn(x, spec.turn, 1), turn(x, spec.turn, -1), turn(x, spec.turn, 2));
+        const pool = alts.filter((y) => y && y !== x);
+        if (pool.length) {
+          used.add(key);
+          splits.push({ c: ru.c, a: ru.a, set: pick(r, pool) });
+          continue;
+        }
+      }
       if (CLASS[ru.a] === 'set') {
         // Flip a place or stroke; mostly one that is in play in the last row, which makes the likelier mistakes.
+        used.add(key);
         const bits = spec.n;
         const row3 = panels[6][ru.c][0] | panels[7][ru.c][0];
         const pool = range(0, bits - 1).filter((b) => !used.has(key + ':' + b));
@@ -276,6 +342,7 @@ function generateLevel({ seed, layout, vary, kinds }) {
         if (!(m >> j & 1)) return;
         const v = o[s.c], spec = specs[s.c];
         if (s.flip) v[0] ^= s.flip;
+        else if (s.set) v[0] = s.set;
         else if (s.a === 'n') v[0] = s.mask;
         else v[(spec.kind === 'shape' ? 'tsc' : 'ptsc').indexOf(s.a)] = s.to;
       });
@@ -287,10 +354,10 @@ function generateLevel({ seed, layout, vary, kinds }) {
     if (options.slice(1).some((o) => accepts(layout, cells, o))) continue;
     // Shuffle the answers; the right one is options[0] before the shuffle.
     const order = shuffle(r, range(0, 7));
-    const score = BASE[layout] + rules.reduce((t, ru) => t + WEIGHT[ru.k], 0);
+    const score = BASE[layout] + rules.reduce((t, ru) => t + WEIGHT[ru.k] + (ru.d && ru.k !== 'const' ? COLS_WEIGHT : 0), 0);
     return { layout, score: Math.round(score * 10) / 10, cells, options: order.map((i) => options[i]), answer: order.indexOf(0), rules };
   }
   return null;
 }
 
-module.exports = { LAYOUTS, ATTRS, CLASS, RULES, get, pop, holds, explain, accepts, generateLevel };
+module.exports = { LAYOUTS, ATTRS, CLASS, RULES, get, pop, turn, holds, explain, accepts, generateLevel };

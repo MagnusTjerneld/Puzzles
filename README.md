@@ -5,7 +5,7 @@ Logic puzzles for phone and browser, in one installable app that plays offline:
 - **Queens**: one queen in every row, column and colour region, and no two queens touching, not even diagonally.
 - **Tango**: fill the board with suns and moons. As many of each in every row and column, never three alike in a row; `=` means the same, `×` means different.
 - **Jugz**: three jugs and no marks on them. Pour from one into another until the first is empty or the second is full, and measure out exactly the amount asked for. Fewest pours for three stars.
-- **Matrix**: a 3 × 3 grid of figures with the last one missing, in the style of the matrix tests used for IQ testing (Raven's progressive matrices, the format of the Mensa admission test). Every row follows the same rules; pick the one of eight answers that completes it.
+- **Matrix**: a 3 × 3 grid of figures with the last one missing, in the style of the matrix tests used for IQ testing (Raven's progressive matrices, the format of the Mensa admission test). Every row follows the same rules; pick the one of eight answers that completes it. Four tiers, up to Expert: rules down the columns as well, shapes that move and figures that turn, four or five rules at once.
 
 Every Queens and Tango level has exactly one solution and can be solved by logic alone; every Jugz level is rated by its shortest solution; every Matrix level has exactly one of its eight answers that fits every rule. **Hint** shows the next step and explains it.
 

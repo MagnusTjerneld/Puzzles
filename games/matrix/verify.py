@@ -1,6 +1,7 @@
 # Independent check of levels.json: the values are in range, the eight answers differ, the stored rules hold along
 # the rows with the right answer in place, and the right answer is the only one of the eight that every attribute
 # accepts (explained by a rule along the rows or down the columns, or left free by the matrix).
+# Turns are worked out here from the geometry (coordinates turned about the centre), not copied from engine.js.
 # Written apart from engine.js on purpose. Run: python3 games/matrix/verify.py
 import json, sys, os
 
@@ -14,7 +15,33 @@ LAYOUTS = {
     'grid4': [('grid', {'n': 4, 't': 5, 's': 3, 'c': 5})],
     'grid9': [('grid', {'n': 9, 't': 5, 's': 3, 'c': 5})],
     'lines': [('lines', {'n': 9})],
+    'rc': [('grid', {'n': 8, 't': 5, 's': 3, 'c': 5}), ('shape', {'t': 5, 's': 4, 'c': 5})],
 }
+GRID_OF = {'grid4': 4, 'grid9': 9, 'lines': 'lines', 'rc': 8}
+
+
+def make_turn(kind):
+    # one clockwise step, as a function on bitmasks
+    if kind == 4:  # 2 x 2 places (row, col), bit = row * 2 + col; a quarter turn: (r, c) -> (c, 1 - r)
+        dest = {r * 2 + c: c * 2 + (1 - r) for r in range(2) for c in range(2)}
+    elif kind == 9:  # the eight outer places go one place round the frame, the centre stays
+        ring = [(0, 0), (0, 1), (0, 2), (1, 2), (2, 2), (2, 1), (2, 0), (1, 0)]
+        dest = {r * 3 + c: ring[(i + 1) % 8][0] * 3 + ring[(i + 1) % 8][1] for i, (r, c) in enumerate(ring)}
+        dest[4] = 4
+    elif kind == 8:  # a ring of eight, numbered clockwise
+        dest = {i: (i + 1) % 8 for i in range(8)}
+    else:  # strokes as segments; turn their end points a quarter clockwise about (50, 50): (x, y) -> (100 - y, x)
+        segs = [((18, 18), (82, 18)), ((82, 18), (82, 82)), ((18, 82), (82, 82)), ((18, 18), (18, 82)),
+                ((18, 18), (82, 82)), ((82, 18), (18, 82)), ((50, 18), (50, 82)), ((18, 50), (82, 50)), 'ring']
+        norm = lambda sg: sg if sg == 'ring' else frozenset(sg)
+        rot = lambda sg: sg if sg == 'ring' else frozenset((100 - y, x) for x, y in sg)
+        index = {norm(sg): i for i, sg in enumerate(segs)}
+        dest = {i: index[rot(norm(sg))] for i, sg in enumerate(segs)}
+    def step(m, times):
+        for _ in range(times % len(dest)):
+            m = sum(1 << dest[b] for b in dest if m >> b & 1)
+        return m
+    return step
 ATTRS = {'shape': 'tsc', 'grid': 'nptsc', 'lines': 'l'}
 
 
@@ -32,10 +59,13 @@ def is_set(a):
     return a in 'pl'
 
 
-def triple_rules(a):
+def triple_rules(a, step=None):
     # every rule as a test on one line of three, except dist, which needs all lines at once
     rules = {'const': lambda x, y, z: x == y == z}
     if is_set(a):
+        for name, k in (('cw1', 1), ('ccw1', -1), ('cw2', 2)):
+            if step:
+                rules[name] = (lambda k: lambda x, y, z: y == step(x, k) and z == step(y, k))(k)
         rules.update({
             'or': lambda x, y, z: z == x | y,
             'and': lambda x, y, z: z == x & y,
@@ -55,10 +85,22 @@ def dist(lines):
     return all(len(set(l)) == 3 for l in lines) and len({tuple(sorted(l)) for l in lines}) == 1
 
 
-def fits(a, lines):
+def fits(a, lines, step):
     if dist(lines):
         return True
-    return any(all(f(*l) for l in lines) for f in triple_rules(a).values())
+    return any(all(f(*l) for l in lines) for f in triple_rules(a, step).values())
+
+
+def step_of(layout, ci, a):
+    # the turn of a component's places or strokes; ccw is the same table run backwards (len - 1 steps)
+    if not is_set(a):
+        return None
+    kind = GRID_OF[layout] if layout != 'rc' or ci == 0 else None
+    if kind is None:
+        return None
+    one = make_turn(kind)
+    size = {4: 4, 9: 8, 8: 8, 'lines': 4}[kind]  # steps for a full turn
+    return lambda m, k: one(m, k % size)
 
 
 def accepted(layout, cells, option):
@@ -68,8 +110,9 @@ def accepted(layout, cells, option):
             v = [value(kind, p[ci], a) for p in grid]
             rows = [v[0:3], v[3:6], v[6:9]]
             cols = [v[0::3], v[1::3], v[2::3]]
-            pinned = fits(a, rows[:2]) or fits(a, cols[:2])
-            if pinned and not (fits(a, rows) or fits(a, cols)):
+            st = step_of(layout, ci, a)
+            pinned = fits(a, rows[:2], st) or fits(a, cols[:2], st)
+            if pinned and not (fits(a, rows, st) or fits(a, cols, st)):
                 return False
     return True
 
@@ -107,8 +150,8 @@ for lv in levels:
         for r in lv['rules']:
             kind = LAYOUTS[layout][r['c']][0]
             v = [value(kind, p[r['c']], r['a']) for p in grid]
-            rows = [v[0:3], v[3:6], v[6:9]]
-            ok = dist(rows) if r['k'] == 'dist' else all(triple_rules(r['a'])[r['k']](*l) for l in rows)
+            lines = [v[0::3], v[1::3], v[2::3]] if r.get('d') == 'cols' else [v[0:3], v[3:6], v[6:9]]
+            ok = dist(lines) if r['k'] == 'dist' else all(triple_rules(r['a'], step_of(layout, r['c'], r['a']))[r['k']](*l) for l in lines)
             if not ok:
                 errs.append(f"rule {r} does not hold")
         good = [i for i, o in enumerate(options) if accepted(layout, cells, o)]
