@@ -20,7 +20,7 @@ const KINDS = {
 const COLS = { 1: 0, 2: 0, 3: 0, 4: 0.5 };
 // [tier, layout, how many attributes vary]. A tier takes its 40 levels from its recipes in turn.
 const plan = [
-  [1, 'centre', 1], [1, 'centre', 2], [1, 'grid4', 1], [1, 'lines', 1], [1, 'lr', 1],
+  [1, 'centre', 1], [1, 'centre', 2], [1, 'grid4', 1], [1, 'grid9', 1], [1, 'lines', 1], [1, 'lr', 1], [1, 'oi', 1],
   [2, 'centre', 3], [2, 'grid4', 2], [2, 'grid9', 2], [2, 'lines', 1], [2, 'lr', 2], [2, 'oi', 2],
   [3, 'grid9', 3], [3, 'grid4', 3], [3, 'lr', 3], [3, 'lr', 4], [3, 'oi', 3], [3, 'oi', 4], [3, 'lines', 1], [3, 'centre', 3],
   [4, 'grid9', 3], [4, 'rc', 3], [4, 'rc', 4], [4, 'lines', 1], [4, 'oi', 4], [4, 'lr', 5],
@@ -29,7 +29,22 @@ const PER_TIER = 40;
 
 // A level's pattern: the layout and which attributes follow which rule, which way. No two levels share one, in
 // any tier: two levels that only differ in which shapes and shades they use are the same puzzle twice.
-const signature = (lv) => lv.layout + ' ' + lv.rules.filter((r) => r.k !== 'const').map((r) => r.c + r.a + '=' + r.k + (r.d ? '|' + r.d : '')).sort().join(',');
+const parts = (lv) => lv.rules.filter((r) => r.k !== 'const').map((r) => lv.layout + ':' + r.c + r.a + '=' + r.k + (r.d ? '|' + r.d : ''));
+const signature = (lv) => parts(lv).sort().join(',');
+// Unique patterns are not enough: a pattern that is another one plus a rule, or one rule turning up again and again,
+// still feels like the same puzzle. So one rule (on one layout) is used at most RULE_CAP times in the whole bank,
+// and within a tier no level's rules may all be found in another level of the same layout.
+const RULE_CAP = 3;
+const uses = new Map();
+const contains = (a, b) => a.every((x) => b.includes(x)); // a's rules all in b
+function fresh(lv, batch) {
+  if (seen.has(signature(lv))) return false;
+  const ps = parts(lv);
+  if (ps.some((x) => (uses.get(x) || 0) >= RULE_CAP)) return false;
+  return !batch.some((o) => o.layout === lv.layout && (contains(ps, parts(o)) || contains(parts(o), ps)));
+}
+// Two levels in a row should not look alike: same layout and a rule in common.
+const alike = (a, b) => a.layout === b.layout && parts(a).some((x) => parts(b).includes(x));
 
 const levels = [], seen = new Set();
 for (const tier of [1, 2, 3, 4]) {
@@ -46,15 +61,26 @@ for (const tier of [1, 2, 3, 4]) {
       let lv = null;
       for (let k = 0; k < TRIES && !lv; k++) {
         const got = generateLevel({ seed: rc.seed++, layout: rc.layout, vary: rc.vary, kinds: KINDS[tier], cols: COLS[tier] });
-        if (got && !seen.has(signature(got))) lv = got;
+        if (got && fresh(got, batch)) lv = got;
       }
       if (!lv) { rc.done = true; continue; }
       seen.add(signature(lv));
+      for (const x of parts(lv)) uses.set(x, (uses.get(x) || 0) + 1);
       batch.push(Object.assign({ tier }, lv));
       rc.got++;
     }
   }
   batch.sort((a, b) => a.score - b.score);
+  // In order of score, except that the next level is the easiest of the next dozen that does not look like the level
+  // before it.
+  const order = [];
+  while (batch.length) {
+    const prev = order[order.length - 1] || levels[levels.length - 1];
+    let k = batch.findIndex((lv, i) => i < 12 && !(prev && alike(prev, lv)));
+    if (k < 0) k = 0;
+    order.push(batch.splice(k, 1)[0]);
+  }
+  batch.push(...order);
   levels.push(...batch);
   console.log(`tier ${tier}: ${batch.length} levels, score ${batch[0].score}..${batch[batch.length - 1].score}; ` + recipes.map((rc) => `${rc.layout}/${rc.vary} ${rc.got}`).join(', '));
 }
