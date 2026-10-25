@@ -1,4 +1,4 @@
-# Independent check of levels.json: the values are in range, the eight answers differ, the stored rules hold along
+# Independent check of levels.json: no two levels follow the same pattern of rules, the values are in range, the eight answers differ, the stored rules hold along
 # the rows with the right answer in place, and the right answer is the only one of the eight that every attribute
 # accepts (explained by a rule along the rows or down the columns, or left free by the matrix).
 # Turns are worked out here from the geometry (coordinates turned about the centre), not copied from engine.js.
@@ -136,6 +136,15 @@ def in_range(layout, panel):
 
 
 bad = 0
+# No two levels may follow the same pattern: layout plus which attributes follow which rule, which way.
+patterns = {}
+for lv in levels:
+    sig = (lv['layout'], tuple(sorted((r['c'], r['a'], r['k'], r.get('d', 'rows')) for r in lv['rules'] if r['k'] != 'const')))
+    patterns.setdefault(sig, []).append(lv['id'])
+for ids in patterns.values():
+    if len(ids) > 1:
+        bad += 1
+        print(ids, ['same pattern of rules'])
 for lv in levels:
     errs = []
     layout, cells, options, ans = lv['layout'], lv['cells'], lv['options'], lv['answer']

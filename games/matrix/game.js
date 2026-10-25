@@ -154,12 +154,14 @@ function ruleText(ru) {
       or: 'the third panel fills every place that is filled in the first or the second',
       and: 'the third panel fills only the places filled in both the first and the second',
       xor: 'lay the first two panels on top of each other: a place filled in both goes empty, a place filled in one stays',
+      minus: 'the third panel is the first with the places of the second emptied',
     }[k];
   } else {
     s = each + {
       or: 'the third figure is the first two laid on top of each other',
       and: 'the third figure keeps only the lines the first two share',
       xor: 'lay the first two figures on top of each other: lines in both cancel out, the rest stay',
+      minus: 'the third figure is the first with the lines of the second taken away',
     }[k];
   }
   return `${label}: ${s}.`;
