@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="96 96 320 320">
+  <rect width="512" height="512" fill="#121414"/>
+  <g transform="translate(116 116)">
+    <rect width="280" height="280" fill="#1d1f24"/>
+    <g><rect x="10" y="10" width="80" height="80" rx="6" fill="#f3f0e7"/><polygon points="50.0,22.0 74.2,64.0 25.8,64.0" fill="#ffffff" stroke="#1b1b1a" stroke-width="5" stroke-linejoin="round"/><rect x="100" y="10" width="80" height="80" rx="6" fill="#f3f0e7"/><polygon points="157.3,32.7 157.3,67.3 122.7,67.3 122.7,32.7" fill="#ffffff" stroke="#1b1b1a" stroke-width="5" stroke-linejoin="round"/><rect x="190" y="10" width="80" height="80" rx="6" fill="#f3f0e7"/><circle cx="230" cy="50" r="22.0" fill="#ffffff" stroke="#1b1b1a" stroke-width="5"/></g>
+    <g><rect x="10" y="100" width="80" height="80" rx="6" fill="#f3f0e7"/><polygon points="67.3,122.7 67.3,157.3 32.7,157.3 32.7,122.7" fill="#96938b" stroke="#1b1b1a" stroke-width="5" stroke-linejoin="round"/><rect x="100" y="100" width="80" height="80" rx="6" fill="#f3f0e7"/><circle cx="140" cy="140" r="22.0" fill="#96938b" stroke="#1b1b1a" stroke-width="5"/><rect x="190" y="100" width="80" height="80" rx="6" fill="#f3f0e7"/><polygon points="230.0,112.0 254.2,154.0 205.8,154.0" fill="#96938b" stroke="#1b1b1a" stroke-width="5" stroke-linejoin="round"/></g>
+    <g><rect x="10" y="190" width="80" height="80" rx="6" fill="#f3f0e7"/><circle cx="50" cy="230" r="22.0" fill="#1d1c1a" stroke="#1b1b1a" stroke-width="5"/><rect x="100" y="190" width="80" height="80" rx="6" fill="#f3f0e7"/><polygon points="140.0,202.0 164.2,244.0 115.8,244.0" fill="#1d1c1a" stroke="#1b1b1a" stroke-width="5" stroke-linejoin="round"/><rect x="190" y="190" width="80" height="80" rx="6" fill="#2a2c33" stroke="#a895ff" stroke-width="4" stroke-dasharray="10 7"/><text x="230" y="248" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="700" font-size="56" fill="#a895ff">?</text></g>
+    <rect width="280" height="280" fill="none" stroke="#c8ccc4" stroke-width="8"/>
+  </g>
+</svg>

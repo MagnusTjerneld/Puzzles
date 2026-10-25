@@ -5,10 +5,11 @@ Logic puzzles for phone and browser, in one installable app that plays offline:
 - **Queens**: one queen in every row, column and colour region, and no two queens touching, not even diagonally.
 - **Tango**: fill the board with suns and moons. As many of each in every row and column, never three alike in a row; `=` means the same, `×` means different.
 - **Jugz**: three jugs and no marks on them. Pour from one into another until the first is empty or the second is full, and measure out exactly the amount asked for. Fewest pours for three stars.
+- **Matrix**: a 3 × 3 grid of figures with the last one missing, in the style of the matrix tests used for IQ testing (Raven's progressive matrices, the format of the Mensa admission test). Every row follows the same rules; pick the one of eight answers that completes it.
 
-Every Queens and Tango level has exactly one solution and can be solved by logic alone; every Jugz level is rated by its shortest solution. **Hint** shows the next step and explains it.
+Every Queens and Tango level has exactly one solution and can be solved by logic alone; every Jugz level is rated by its shortest solution; every Matrix level has exactly one of its eight answers that fits every rule. **Hint** shows the next step and explains it.
 
-Play: https://magnustjerneld.github.io/Puzzles/ (each game also has its own link: `…/Puzzles/#queens`, `#tango`, `#jugz`).
+Play: https://magnustjerneld.github.io/Puzzles/ (each game also has its own link: `…/Puzzles/#queens`, `#tango`, `#jugz`, `#matrix`).
 
 ## Install as an app (PWA)
 
@@ -27,7 +28,7 @@ A service worker precaches the page, icons and fonts on the first visit. Online,
 | `src/sw.template.js` | Service worker; `scripts/build.js` fills in the version and the file list |
 | `scripts/build.js` | Builds `index.html` (everything inlined, one file) and `sw.js` |
 | `scripts/build-icons.js` | Renders `icons/*.svg` and each game's `icon.svg` to PNG (needs playwright) |
-| `test/hints.test.js` | Follows Hint through every level of every game in a headless browser (for Jugz it must also take exactly the optimum) |
+| `test/hints.test.js` | Follows Hint through every level of every game in a headless browser (for Jugz it must also take exactly the optimum; for Matrix it must never cross out the right answer) |
 | `manifest.webmanifest` | App name, icons and the per-game shortcuts. It deliberately has **no `id`**, see below |
 
 `index.html`, `sw.js` and the PNG icons are built, not checked in. `.github/workflows/pages.yml` builds, checks and publishes on every push to `main`.

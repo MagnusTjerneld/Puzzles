@@ -1,7 +1,7 @@
 {
   "name": "Puzzles",
   "short_name": "Puzzles",
-  "description": "Logic puzzles for phone and browser: Queens, Tango and Jugz. Plays offline.",
+  "description": "Logic puzzles for phone and browser: Queens, Tango, Jugz and Matrix. Plays offline.",
   "lang": "en",
   "start_url": "./",
   "scope": "./",
@@ -20,6 +20,7 @@
   "shortcuts": [
     { "name": "Queens", "url": "./#queens", "icons": [{ "src": "icons/queens-192.png", "sizes": "192x192", "type": "image/png" }] },
     { "name": "Tango", "url": "./#tango", "icons": [{ "src": "icons/tango-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "Jugz", "url": "./#jugz", "icons": [{ "src": "icons/jugz-192.png", "sizes": "192x192", "type": "image/png" }] }
+    { "name": "Jugz", "url": "./#jugz", "icons": [{ "src": "icons/jugz-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Matrix", "url": "./#matrix", "icons": [{ "src": "icons/matrix-192.png", "sizes": "192x192", "type": "image/png" }] }
   ]
 }
