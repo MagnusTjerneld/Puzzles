@@ -68,16 +68,18 @@ h1, .clock { flex: 1 1 0; } /* equal columns: the clock stays put whatever the l
 .bar button { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--edge); border-radius: 12px; padding: 13px 6px; font-size: 14px; }
 .bar button:hover:not(:disabled) { background: var(--panel-2); }
 .bar button:disabled { opacity: .35; cursor: default; }
+.bar button.primary { background: var(--accent); color: var(--on-accent); border-color: transparent; font-weight: 700; }
+.bar button.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
 
 .picker { position: absolute; inset: 0; background: var(--panel); border-radius: 4px; padding: 14px; overflow-y: auto; z-index: 5; }
 .picker h2 { margin: 0 0 8px; font: 500 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .picker section + section { margin-top: 16px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 0 14px; font: 400 12px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: var(--tc); }
-.t1 { --tc: var(--good); } .t2 { --tc: #f0a93a; } .t3 { --tc: var(--bad); }
+.t1 { --tc: var(--good); } .t2 { --tc: #f0a93a; } .t3 { --tc: var(--bad); } .t4 { --tc: #b48cff; }
 .lv { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; }
 .lv button { background: var(--panel-2); border: 1px solid transparent; border-radius: 8px; padding: 8px 0; font: 400 13px var(--mono); font-variant-numeric: tabular-nums; }
-.lv button.t1, .lv button.t2, .lv button.t3 { border-bottom: 3px solid var(--tc); padding-bottom: 6px; }
+.lv button.t1, .lv button.t2, .lv button.t3, .lv button.t4 { border-bottom: 3px solid var(--tc); padding-bottom: 6px; }
 .lv button.solved { color: var(--good); border-color: #2f4a36; border-bottom-color: var(--tc, #2f4a36); }
 .lv button.now { background: var(--accent); color: var(--on-accent); font-weight: 500; }
 .lv button small { display: block; font-size: 9px; line-height: 1; height: 9px; margin-top: 3px; letter-spacing: 1px; color: var(--accent); }

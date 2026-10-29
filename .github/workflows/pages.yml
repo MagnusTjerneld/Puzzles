@@ -34,6 +34,10 @@ jobs:
       - name: Check the levels
         run: for f in games/*/verify.py; do python3 "$f" || exit 1; done
 
+      # Matrix Test draws its questions in the browser; check a sample of tests with the same independent checker.
+      - name: Check a sample of Matrix Tests
+        run: node test/exam-sample.js /tmp/exams.json 100 && python3 games/matrix/verify.py /tmp/exams.json
+
       # SITE_URL is needed for the link preview (og:image must be an absolute address).
       # The default is the GitHub Pages address; set the repository variable SITE_URL for a custom domain.
       - name: Build icons, page and service worker
@@ -45,6 +49,9 @@ jobs:
 
       - name: Follow Hint through every level
         run: node test/hints.test.js
+
+      - name: Take Matrix Test
+        run: node test/exam.test.js
 
       - name: Collect the site
         run: |

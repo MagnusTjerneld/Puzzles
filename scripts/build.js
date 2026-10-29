@@ -10,8 +10,8 @@ const root = path.join(__dirname, '..');
 const read = (...p) => fs.readFileSync(path.join(root, ...p), 'utf8');
 // The games, in hub order. Each folder holds engine.js, game.js, game.css, levels.json and logo.svg.
 // Any other .js in the folder (generate.js aside) is code for the page too, included before game.js.
-const GAMES = ['queens', 'tango', 'jugz'];
-const DESCRIPTION = 'Logic puzzles for phone and browser: Queens, Tango and Jugz. Plays offline.';
+const GAMES = ['queens', 'tango', 'jugz', 'matrix'];
+const DESCRIPTION = 'Logic puzzles for phone and browser: Queens, Tango, Jugz and Matrix. Plays offline.';
 
 let site = process.env.SITE_URL || '';
 if (site && !site.endsWith('/')) site += '/';

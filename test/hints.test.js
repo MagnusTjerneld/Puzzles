@@ -32,6 +32,17 @@ const GAMES = {
     step: `(P, g) => { const h = g.dbg.hint; if (!h) return 'no hint'; g.dbg.pour(h.from, h.to); }`,
     done: `(P, g) => (g.dbg.moves === g.dbg.lv.opt ? null : 'took ' + g.dbg.moves + ' pours, the optimum is ' + g.dbg.lv.opt)`,
   },
+  matrix: {
+    // Each hint names a rule and crosses out answers; it must never cross out the right one. The last points at it.
+    step: `(P, g) => {
+      const h = g.dbg.hint, a = g.dbg.lv.answer;
+      if (h.kind === 'elim') { if (!h.cells.size) return 'nothing crossed out'; if (h.cells.has(a)) return 'crossed out the right answer'; return; }
+      if (h.kind !== 'answer') return 'unexpected ' + h.kind;
+      if (h.cells.size !== 1 || !h.cells.has(a)) return 'pointed at a wrong answer';
+      g.dbg.tap(a);
+    }`,
+    done: `(P, g) => (g.dbg.wrong === 0 ? null : 'a wrong answer was counted')`,
+  },
 };
 
 (async () => {
