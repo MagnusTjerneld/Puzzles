@@ -41,11 +41,88 @@ function shape(t, x, y, r, fill, w) {
   return `<polygon points="${pts.join(' ')}" ${style} stroke-linejoin="round"/>`;
 }
 
+// ---- The figures that are not shapes on a grid. Directions are eighths, clockwise from up.
+const path = (d, w = 3.4) => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+const pt = (x, y) => x.toFixed(1) + ' ' + y.toFixed(1);
+// The unit vector of direction o (in eighths), turned by deg more degrees.
+const dirv = (o, deg = 0) => { const a = (o * 45 + deg) * Math.PI / 180; return [Math.sin(a), -Math.cos(a)]; };
+// An arrow through the middle, with n heads at its tip, in the middle or at its tail (h), all pointing its way.
+function arrowBody([o, h, n]) {
+  const [dx, dy] = dirv(o), L = 36, gap = 8, at = (t) => [50 + dx * t, 50 + dy * t];
+  let d = `M${pt(...at(-L))}L${pt(...at(L))}`;
+  // Where the first head's point sits along the arrow; the rest follow behind it.
+  const first = [L, (n - 1) * gap / 2 + 5, -L + 11 + (n - 1) * gap][h];
+  for (let k = 0; k < n; k++) {
+    const [x, y] = at(first - k * gap);
+    const [ax, ay] = dirv(o, 180 - 38), [bx, by] = dirv(o, 180 + 38);
+    d += `M${pt(x + ax * 12, y + ay * 12)}L${pt(x, y)}L${pt(x + bx * 12, y + by * 12)}`;
+  }
+  return path(d);
+}
+const HINGE_ANGLE = [26, 60, 104];
+// Two arms from a hinge, opening towards o, narrow, medium or wide (a); the hinge white, grey or black (c).
+function hingeBody([o, a, c]) {
+  const [dx, dy] = dirv(o), hx = 50 - dx * 22, hy = 50 - dy * 22, half = HINGE_ANGLE[a] / 2;
+  let d = '';
+  for (const s of [-1, 1]) { const [ux, uy] = dirv(o, s * half); d += `M${pt(hx + ux * 7, hy + uy * 7)}L${pt(hx + ux * 48, hy + uy * 48)}`; }
+  return path(d) + `<circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="6.5" fill="${SHADE[[0, 2, 4][c]]}" stroke="${INK}" stroke-width="2.6"/>`;
+}
+// A bar with a square and a dot (two layers) at each place: left and right end, above and below.
+const BAR = [[24, -1], [76, -1], [76, 1], [24, 1]];
+function barBody([q, d]) {
+  let h = path('M24 50H76', 3.4);
+  BAR.forEach(([x, side], k) => {
+    const cy = 50 + side * 10;
+    if (q >> k & 1) h += `<rect x="${x - 10}" y="${cy - 10}" width="20" height="20" fill="none" stroke="${INK}" stroke-width="3.2"/>`;
+    if (d >> k & 1) h += `<circle cx="${x}" cy="${cy}" r="4" fill="${INK}"/>`;
+  });
+  return h;
+}
+// A post with a dot or a square beside each end, left and right (places 0 top left, 1 top right, 2 bottom right,
+// 3 bottom left).
+const POST = [[-1, 30], [1, 30], [1, 70], [-1, 70]];
+function postBody([z]) {
+  let h = path('M50 20V80', 3.4);
+  POST.forEach(([side, cy], k) => {
+    const x = Engine.dig(z, k), cx = 50 + side * 10;
+    if (x === 1) h += `<circle cx="${cx}" cy="${cy}" r="4.2" fill="${INK}"/>`;
+    if (x === 2) h += `<rect x="${cx - 9}" y="${cy - 9}" width="18" height="18" fill="none" stroke="${INK}" stroke-width="3.2"/>`;
+  });
+  return h;
+}
+// An axis with a triangle on either side of each end, white or dark (places as on the post).
+function bowBody([f]) {
+  let h = '';
+  POST.forEach(([side], k) => {
+    const x = Engine.dig(f, k);
+    if (!x) return;
+    const [y0, y1] = k < 2 ? [16, 46] : [54, 84];
+    h += `<polygon points="50,${y0} 50,${y1} ${50 + side * 25},${(y0 + y1) / 2}" fill="${SHADE[x === 1 ? 0 : 3]}" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>`;
+  });
+  return h + path('M50 12V88', 3.4);
+}
+// A post with stacks of pieces: black ones (b) and white ones (w) on the left when plus, on the right when minus,
+// black at the bottom.
+function scaleBody([b, w, t]) {
+  let h = path('M50 14V86', 3.2);
+  for (const side of [-1, 1]) {
+    const stack = [];
+    if (Math.sign(b) === -side) for (let k = 0; k < Math.abs(b); k++) stack.push(SHADE[4]);
+    if (Math.sign(w) === -side) for (let k = 0; k < Math.abs(w); k++) stack.push(SHADE[0]);
+    stack.forEach((fill, k) => { h += shape(t, 50 + side * 13, 76 - k * 16.5, 8, fill, 2); });
+  }
+  return h;
+}
+// Three shapes in a row, each black or white.
+const row3Body = (xs) => xs.map((x, k) => shape(x >> 1, 20 + k * 30, 50, 11.5, SHADE[x & 1 ? 4 : 0], 2.2)).join('');
+const BODY = { arrow: arrowBody, hinge: hingeBody, bar: barBody, post: postBody, bow: bowBody, scale: scaleBody, row3: row3Body };
+
 function panelBody(layout, p) {
   let h = '';
   Engine.LAYOUTS[layout].forEach((spec, ci) => {
     const v = p[ci];
-    if (spec.kind === 'shape') {
+    if (BODY[spec.kind]) h += BODY[spec.kind](v);
+    else if (spec.kind === 'shape') {
       const s = SLOT[spec.slot];
       h += shape(v[0], s.x, s.y, s.r[v[1]], SHADE[v[2]], s.w);
     } else if (spec.ring) {
@@ -76,54 +153,86 @@ function boardHtml(lv) {
 }
 
 // ---------- Words ----------
-const ATTR_WORD = { t: 'shape', s: 'size', c: 'shade', n: 'count', p: 'places', l: 'lines' };
+const ATTR_WORD = { t: 'shape', s: 'size', c: 'shade', n: 'count', p: 'places', l: 'lines', r: 'shapes', z: 'dots and squares', f: 'triangles' };
+// Names that depend on the kind of figure.
+const KIND_WORD = {
+  arrow: { o: 'direction', h: 'heads', n: 'number of heads' },
+  hinge: { o: 'direction', a: 'angle', c: 'hinge' },
+  bar: { q: 'squares', d: 'dots' },
+  scale: { b: 'black pieces', w: 'white pieces', t: 'shape' },
+};
 const SIDE_WORD = { l: 'left', r: 'right', o: 'outer', i: 'inner', m: 'middle' };
 const SHAPE_NAME = ['triangle', 'square', 'pentagon', 'hexagon', 'circle'];
 const SHADE_NAME = ['white', 'light grey', 'grey', 'dark grey', 'black'];
+const HINGE_SHADE = ['white', 'grey', 'black'];
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const and = (xs) => (xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1]);
 const valueOf = (lv, p, ru) => Engine.get(Engine.LAYOUTS[lv.layout][ru.c], p[ru.c], ru.a);
+const LINE_WORD = { rows: 'row', cols: 'column', diag: 'diagonal', anti: 'diagonal' };
+const ALONG = { rows: 'along the row', cols: 'down the column', diag: 'down the diagonal to the right', anti: 'down the diagonal to the left' };
+// Combining rules talk about the first, second and third panel: say which way they are counted.
+const EACH = { rows: '', cols: 'in each column, ', diag: 'on each diagonal down to the right, ', anti: 'on each diagonal down to the left, ' };
 
-// What rule ru says, in words, as a full sentence. Rules run along the rows, or (ru.d === 'cols') down the columns.
+// What rule ru says, in words, as a full sentence. Rules run along the rows, or (ru.d) down the columns or the
+// diagonals, which carry on from the other side of the grid.
 function ruleText(lv, ru) {
-  const spec = Engine.LAYOUTS[lv.layout][ru.c], a = ru.a, k = ru.k, cols = ru.d === 'cols';
-  const label = cap(spec.ring ? 'ring ' + ATTR_WORD[a] : spec.kind === 'shape' && spec.slot !== 'c' ? SIDE_WORD[spec.slot] + ' ' + ATTR_WORD[a] : ATTR_WORD[a]);
-  const line = cols ? 'column' : 'row', along = cols ? 'down the column' : 'along the row';
-  const first = (cols ? [0, 3, 6] : [0, 1, 2]).map((i) => valueOf(lv, lv.cells[i], ru)).sort((x, y) => x - y);
+  const spec = Engine.LAYOUTS[lv.layout][ru.c], a = ru.a, k = ru.k, dir = ru.d || 'rows', cls = Engine.CLASS[a];
+  const word = (KIND_WORD[spec.kind] || {})[a] || ATTR_WORD[a];
+  const label = cap(spec.ring ? 'ring ' + word : spec.kind === 'shape' && spec.slot !== 'c' ? SIDE_WORD[spec.slot] + ' ' + word : word);
+  const line = LINE_WORD[dir], along = ALONG[dir], each = EACH[dir];
+  const first = Engine.LINES[dir][0].map((i) => valueOf(lv, lv.cells[i], ru)).sort((x, y) => x - y);
   const steps = (one, many) => ({ up1: `one ${one}`, down1: `one ${many}`, up2: `two ${one}`, down2: `two ${many}` })[k];
-  // Combining rules talk about the first, second and third panel: say which way they are counted.
-  const each = cols ? 'in each column, ' : '';
-  const way = k === 'ccw1' ? 'anticlockwise' : 'clockwise';
+  const way = k.startsWith('ccw') ? 'anticlockwise' : 'clockwise';
   let s;
   if (k === 'const') s = { p: `the same places are filled in every panel of a ${line}`, l: `the same figure all ${along.replace('the', 'each')}` }[a] || `the same all ${along.replace('the', 'each')}`;
   else if (k === 'dist') {
     s = {
       t: `every ${line} has a ${and(first.map((x) => SHAPE_NAME[x]))}`,
       s: `every ${line} has the same three sizes`,
-      c: `every ${line} has ${and(first.map((x) => SHADE_NAME[x]))}`,
+      c: `every ${line} has ${and(first.map((x) => (spec.kind === 'hinge' ? HINGE_SHADE : SHADE_NAME)[x]))}`,
       n: `every ${line} has ${and(first.map(String))} of them`,
       p: `every ${line} uses the same three patterns`,
       l: `every ${line} uses the same three figures`,
-    }[a] + ', each time in a new order';
-  } else if (k === 'cw1' || k === 'ccw1' || k === 'cw2') {
+      o: `every ${line} points the same three ways`,
+      h: `every ${line} has them at the tip, in the middle and at the tail`,
+      a: `every ${line} has a narrow, a medium and a wide one`,
+      b: `every ${line} has the same three counts`,
+      w: `every ${line} has the same three counts`,
+    }[a] || `every ${line} uses the same three patterns`;
+    s += ', each time in a new order';
+  } else if (cls === 'cyc') s = `turns ${k.endsWith('1') ? 'an eighth' : 'a quarter'} ${way} at each step ${along}`;
+  else if (cls === 'seq') s = k === 'shl' ? `the three move one place to the left at each step ${along}, the first going to the end` : `the three move one place to the right at each step ${along}, the last going to the front`;
+  else if (cls === 'fold') {
+    const [ft, fb] = Engine.FOLDS[k], side = (x) => (x ? 'right' : 'left');
+    s = `at each step ${along} one end folds over: first the top to the ${side(ft)}, then the bottom to the ${side(fb)}. Where a triangle lands on another, the dark one shows`;
+  } else if (cls === 'tern') s = each + 'count a dot as one and a square as two, place by place: the third panel is the first two added, going round after two (a dot and a dot make a square, a dot and a square cancel out, two squares make a dot)';
+  else if (cls === 'set' && (k === 'cw1' || k === 'ccw1' || k === 'cw2')) {
     if (a === 'l') s = `the figure turns ${k === 'cw2' ? 'half way round' : 'a quarter ' + way} at each step ${along}`;
     else if (spec.n === 4) s = `the filled places turn ${k === 'cw2' ? 'half way round' : 'a quarter ' + way} at each step ${along}`;
     else s = `the shapes move ${k === 'cw2' ? 'two places' : 'one place'} ${way} round the ${spec.ring ? 'ring' : 'frame'} at each step ${along}` + (spec.n === 9 ? ' (the centre stays)' : '');
+  } else if (a === 'b' || a === 'w') {
+    s = {
+      add: each + 'count those on the left as plus and those on the right as minus: the third panel is the first two added, so pieces on opposite sides cancel out',
+      sub: each + 'count those on the left as plus and those on the right as minus: the third panel is the first less the second',
+    }[k] || `${steps('more', 'more')} on the ${k.startsWith('up') ? 'left (or fewer on the right)' : 'right (or fewer on the left)'} at each step ${along}`;
   } else if (a === 't') s = `${k === 'up1' ? 'one more corner' : 'one corner fewer'} at each step ${along}`;
   else if (a === 's') s = `${k.startsWith('up') ? 'grows' : 'shrinks'} by ${k.endsWith('1') ? 'one size' : 'two sizes'} at each step ${along}`;
   else if (a === 'c') s = `${k.endsWith('1') ? 'one shade' : 'two shades'} ${k.startsWith('up') ? 'darker' : 'lighter'} at each step ${along}`;
+  else if (a === 'h') s = `they move ${k.endsWith('1') ? 'one place' : 'two places'} ${k.startsWith('up') ? 'back' : 'forward'} (tip, middle, tail) at each step ${along}`;
+  else if (a === 'a') s = `opens ${k.endsWith('2') ? 'two steps' : 'a step'} ${k.startsWith('up') ? 'wider' : 'narrower'} at each step ${along}`;
   else if (a === 'n') {
     s = {
       add: each + 'the third panel has as many as the first two together',
       sub: each + 'the third panel has as many as the first, less the second',
     }[k] || `${steps('more', 'fewer')} at each step ${along}`;
-  } else if (a === 'p') {
+  } else if (a === 'p' || a === 'q' || a === 'd') {
+    const turned = k.endsWith('m') && k !== 'm' ? ', and then the bar is turned over: above and below swap' : '';
     s = each + {
       or: 'the third panel fills every place that is filled in the first or the second',
       and: 'the third panel fills only the places filled in both the first and the second',
       xor: 'lay the first two panels on top of each other: a place filled in both goes empty, a place filled in one stays',
       minus: 'the third panel is the first with the places of the second emptied',
-    }[k];
+    }[k.replace(/m$/, '')] + turned;
   } else {
     s = each + {
       or: 'the third figure is the first two laid on top of each other',
@@ -132,7 +241,7 @@ function ruleText(lv, ru) {
       minus: 'the third figure is the first with the lines of the second taken away',
     }[k];
   }
-  return `${label}: ${s}.`;
+  return `${label}: ${s}${ru.d === 'diag' || ru.d === 'anti' ? ' (the diagonals carry on from the other side of the grid)' : ''}.`;
 }
 
 // The rules that tell the right answer from the wrong ones (the ones Hint would name), in words.

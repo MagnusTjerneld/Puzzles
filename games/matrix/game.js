@@ -80,11 +80,11 @@ function rulesHtml() {
   return [
     card('01', 'The goal', 'Every row of the grid follows the same rules. Work them out and pick the answer that completes the last row. Each level has exactly one right answer.',
       strip('centre', goal, 3, 'A grid of shapes with the last one missing')),
-    card('02', 'Look along the rows', 'Shape, size, shade and count change in steps, come back in a new order, or stay the same. A figure can be made of several parts, each with its own rule. In the hardest levels a rule can run down the columns instead, and shapes can move round the frame or turn.',
+    card('02', 'Look along the rows', 'Shape, size, shade, count and direction change in steps, come back in a new order, or stay the same. A figure can be made of several parts, each with its own rule. In the hardest levels a rule can run down the columns, or along the diagonals, which carry on from the other side of the grid; shapes move round the frame, and figures turn, shift or fold over.',
       strip('centre', [[[1, 0, 1]], [[1, 2, 1]], [[1, 4, 1]]], 3, 'A square that grows at each step')),
     card('03', 'Count', 'Sometimes it is how many there are, or which places are filled, that follows the rule.',
       strip('grid4', [[[1, 4, 1, 4]], [[3, 4, 1, 4]], [[7, 4, 1, 4]]], 3, 'One, two, then three dots')),
-    card('04', 'Overlay', 'Sometimes the third figure is the first two laid on top of each other. In some levels lines in both cancel out.',
+    card('04', 'Overlay', 'Sometimes the third figure is the first two laid on top of each other. In some levels what is in both cancels out, or the result is turned over.',
       strip('lines', [[[1 | 8]], [[1 | 16]], [[8 | 16]]], 3, 'Two figures laid on top of each other; the line they share cancels out')),
     card('05', 'One try counts', 'A wrong answer is crossed out in red. Solve a level with no wrong answer and no hint for a star.',
       `<svg class="mini" viewBox="0 0 128 96" role="img" aria-label="A star"><rect width="128" height="96" rx="4" style="fill:var(--mx-gap)"/><path transform="translate(64 48) scale(2.2)" d="M0-12l3.5 7.6 8.2.9-6.1 5.6 1.7 8.1L0 6.1l-7.3 4.1 1.7-8.1-6.1-5.6 8.2-.9z" style="fill:var(--accent)"/></svg>`),
