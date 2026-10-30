@@ -4,7 +4,8 @@ body[data-game="matrix"], body[data-game="mtest"] {
   --mx-gap: #2a2c33;      /* the missing panel, and the backing of the rules pictures */
   --mx-letter: #807b70;   /* the letter on an answer */
   --mx-sep: #5d6460;
-  --mx-tick: #2f8a45;     /* the tick on the right answer: darker than --good, to stand out on paper */      /* the line between the grid and the answers */
+  --mx-tick: #2f8a45;     /* the tick on the right answer: darker than --good, to stand out on paper */
+  --mx-cross: #d23f34;    /* the cross on a wrong answer, as dark against the paper as the tick */      /* the line between the grid and the answers */
 }
 [data-for="matrix"], [data-for="mtest"] { line-height: 1.2; }
 /* The board fills the stage, upright or sideways; layoutBoard (draw.js) sets the panel size --m and the gaps --g
@@ -34,9 +35,10 @@ body[data-game="matrix"], body[data-game="mtest"] {
 .mx-a.out { opacity: .3; }
 .mx-a.out::after, .mx-a.wrong::after, .mx-a.wrong::before { content: ''; position: absolute; left: 50%; top: 50%; width: 120%; height: 1.2cqw; border-radius: 1cqw; transform: translate(-50%, -50%) rotate(45deg); }
 .mx-a.out::after { background: var(--ink); }
-.mx-a.wrong { background: color-mix(in srgb, var(--mx-paper) 70%, var(--bad)); }
+.mx-a.wrong { background: color-mix(in srgb, var(--mx-paper) 70%, var(--bad)); box-shadow: 0 0 0 0.7cqw var(--mx-cross); }
 .mx-a.wrong svg { opacity: .45; }
-.mx-a.wrong::after, .mx-a.wrong::before { background: var(--bad); }
+/* The cross is drawn like the tick on a right answer: about half the panel, the same thick stroke. */
+.mx-a.wrong::after, .mx-a.wrong::before { background: var(--mx-cross); width: 78%; height: calc(var(--m) * .085); border-radius: calc(var(--m) * .045); }
 .mx-a.wrong::before { transform: translate(-50%, -50%) rotate(-45deg); }
 .mx-a.flash { box-shadow: 0 0 0 0.7cqw var(--accent); opacity: 1; }
 .mx-a.out.flash { opacity: .45; }
