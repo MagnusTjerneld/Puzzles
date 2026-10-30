@@ -15,7 +15,7 @@
 //   resize()                     the stage changed size
 //   snapshot() / restore(s)      opaque copies of the state, for undo and redo
 //   reset()                      back to the start state
-//   started()                    has the player changed anything? (starts the clock)
+//   started()                    has the player changed anything? (starts the clock, unless clockOnLoad)
 //   solved()
 //   status()                     { count: html, msg: text, bad: bool } for the status row while playing
 //   hint()                       sets the game's own highlight and returns { text, label? }, or null; label defaults to "Why"
@@ -26,6 +26,8 @@
 //   badge(level)                 a short text under the level's number in the picker (e.g. stars)
 //   onSolved()                   called once when a level becomes solved, before the status row is drawn
 //   winNote()                    a line under "Solved in ..." (e.g. stars and the optimum)
+//   clockOnLoad                  true: the clock starts when the level is shown, not at the first move (a puzzle that is
+//                                all thinking and one tap, like Matrix)
 // A game that is a test rather than a puzzle (Matrix Test) can take over more of the frame:
 //   heading(level)               the big line in the header instead of "Level N"
 //   bestText(level)              the small line under the clock instead of "Best mm:ss"
@@ -101,7 +103,7 @@ const Puzzles = (() => {
   // that is solved or untouched.
   function savePlay() {
     if (!game || !lv) return;
-    if (finished || (!game.started() && !undoSt.length && !redoSt.length)) { try { localStorage.removeItem(key('play')); } catch (e) {} return; }
+    if (finished || (!game.started() && !undoSt.length && !redoSt.length && !(game.clockOnLoad && secs))) { try { localStorage.removeItem(key('play')); } catch (e) {} return; }
     store.set(key('play'), { lv: lv.id, s: game.snapshot(), undo: undoSt, redo: redoSt, secs, ticking });
   }
   // Same arrays of the same lengths and objects with the same keys: a saved board that still fits the level.
@@ -378,11 +380,12 @@ const Puzzles = (() => {
     if (!$('rules').hidden) closeRules(); else if (!$('picker').hidden) closePicker();
   });
 
-  // The clock runs while a level is being played and nothing covers it. It starts at the first move and then keeps
-  // running, also when Restart or Undo takes the board back to its start.
+  // The clock runs while a level is being played and nothing covers it. It starts at the first move (or when the level
+  // is shown, for a game with clockOnLoad) and then keeps running, also when Restart or Undo takes the board back to
+  // its start.
   setInterval(() => {
     if (!game || finished || document.hidden || hubShowing() || !$('picker').hidden || !$('rules').hidden) return;
-    if (!ticking && !game.started()) return;
+    if (!ticking && !game.started() && !game.clockOnLoad) return;
     ticking = true;
     secs++; showClock();
     const lim = game.limit ? game.limit(lv) : 0;

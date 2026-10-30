@@ -115,6 +115,8 @@ Puzzles.register({
   // Restart keeps the mark of a wrong answer or hint; restarting a solved level is a new attempt.
   reset() { if (ctx.finished) t = 0; out = new Array(8).fill(0); shown = new Array(lv.rules.length).fill(0); pick = -1; bad = false; },
   started: () => pick >= 0 || t > 0 || out.some(Boolean),
+  // Working out the rule is the whole puzzle and the answer one tap, so the time counts from when the level shows.
+  clockOnLoad: true,
   solved: () => pick === lv.answer,
   onSolved() {
     if (t) return;
