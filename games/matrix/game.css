@@ -3,10 +3,11 @@ body[data-game="matrix"], body[data-game="mtest"] {
   --mx-paper: #f3f0e7;    /* a panel */
   --mx-gap: #2a2c33;      /* the missing panel, and the backing of the rules pictures */
   --mx-letter: #807b70;   /* the letter on an answer */
+  --mx-sep: #5d6460;      /* the line between the grid and the answers */
 }
 [data-for="matrix"], [data-for="mtest"] { line-height: 1.2; }
 /* The board fills the stage, upright or sideways; layoutBoard (draw.js) sets the panel size --m and the gaps --g
-   (between panels) and --G (between the grid and the answers). The answers are under the grid, or beside it (.side). */
+   (between panels) and --G (either side of the line between the grid and the answers). The answers are under the grid, or beside it (.side). */
 .mx { --m: 18cqw; --g: 1.4cqw; --G: 3cqw; container-type: inline-size; display: grid; align-content: center; justify-content: center; justify-items: center; gap: var(--G); }
 .mx.side { grid-auto-flow: column; align-items: center; }
 .mx-m { width: calc(3 * var(--m) + 2 * var(--g)); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--g); }
@@ -18,6 +19,9 @@ body[data-game="matrix"], body[data-game="mtest"] {
 [data-for="matrix"].done .mx-gap { animation: mx-glow 1.2s ease-out; }
 @keyframes mx-glow { 0% { box-shadow: 0 0 0 0.7cqw var(--accent), 0 0 0 0 var(--accent); } 100% { box-shadow: 0 0 0 0.7cqw var(--accent), 0 0 0 3cqw transparent; } }
 
+/* The line between the grid and the answers: across under the grid, or down beside it. */
+.mx-sep { width: calc(3 * var(--m) + 2 * var(--g)); height: 2px; border-radius: 1px; background: var(--mx-sep); }
+.mx.side .mx-sep { width: 2px; height: calc(3 * var(--m) + 2 * var(--g)); }
 .mx-o { display: grid; grid-template-columns: repeat(3, var(--m)); gap: var(--g); }
 .mx.side .mx-o { grid-template-columns: repeat(2, var(--m)); }
 .mx-a { position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 1.2cqw; background: var(--mx-paper); overflow: hidden;

@@ -149,6 +149,7 @@ function boardHtml(lv) {
   return `<div class="mx-m" role="img" aria-label="Three rows of three figures, the last one missing">`
     + lv.cells.map((p) => `<div class="mx-c">${panelSvg(L, p)}</div>`).join('')
     + '<div class="mx-c mx-gap"></div></div>'
+    + '<div class="mx-sep" aria-hidden="true"></div>'
     + '<div class="mx-o">' + lv.options.map((p, i) => `<button type="button" class="mx-a" data-i="${i}">${panelSvg(L, p)}<span class="mx-l">${LETTER[i]}</span></button>`).join('') + '</div>';
 }
 
@@ -156,9 +157,10 @@ function boardHtml(lv) {
 // grid (three by two) or beside it (two by three), whichever gives larger panels. Every panel is the same size.
 function layoutBoard(root, W, H) {
   W = Math.floor(W); H = Math.floor(H || W);
-  const g = Math.max(4, Math.round(Math.min(W, H) * 0.016)), G = Math.round(g * 2.4);
-  const under = Math.min((W - 2 * g) / 3, (H - 3 * g - G) / 5);
-  const beside = Math.min((W - 3 * g - G) / 5, (H - 2 * g) / 3);
+  // g: between panels; G: on either side of the line that separates the grid from the answers (2 px).
+  const g = Math.max(4, Math.round(Math.min(W, H) * 0.016)), G = Math.round(g * 1.8), sep = 2 * G + 2;
+  const under = Math.min((W - 2 * g) / 3, (H - 3 * g - sep) / 5);
+  const beside = Math.min((W - 3 * g - sep) / 5, (H - 2 * g) / 3);
   const side = beside > under * 1.04;
   const m = Math.max(20, Math.floor(Math.min(side ? beside : under, 170)));
   root.style.width = W + 'px'; root.style.height = H + 'px';
