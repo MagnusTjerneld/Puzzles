@@ -6,22 +6,26 @@ const LETTER = 'ABCDEFGH';
 // ---------- Drawing ----------
 // A panel is drawn in a 100 x 100 box, black on paper, like a printed test.
 const INK = '#1b1b1a';
-const SHADE = ['#ffffff', '#cdcac2', '#96938b', '#5b5954', '#1d1c1a'];
+// Shades a fifth of the way apart in lightness (CIE L* 100, 78, 55, 33, 10): the light end used to be the closest,
+// where a small shape's outline already makes its fill hard to read.
+const SHADE = ['#ffffff', '#c2bfb6', '#87847c', '#4f4d48', '#1d1c1a'];
 // Shapes are scaled so that one size looks the same size whatever the shape: a triangle with the circle's radius
 // looks small, a square looks big.
 const NORM = [1.12, 0.98, 0.97, 0.96, 0.88];
-// Where each kind of single shape sits, its radius for each size, and its stroke.
+// Where each kind of single shape sits, its radius for each size, and its stroke. Sizes grow by a constant ratio
+// (about 1.35 to 1.5), not a constant step: the eye compares sizes by ratio, so equal steps made the big sizes
+// nearly indistinguishable. Each table is as wide as its room allows.
 const SLOT = {
-  c: { x: 50, y: 50, r: [14, 20, 26, 32, 38], w: 2.4 },
-  l: { x: 27, y: 50, r: [8, 12.5, 17, 21.5], w: 2.2 },
-  r: { x: 73, y: 50, r: [8, 12.5, 17, 21.5], w: 2.2 },
+  c: { x: 50, y: 50, r: [11, 15, 20.5, 28, 38], w: 2.4 },
+  l: { x: 27, y: 50, r: [8, 11.2, 15.7, 22], w: 2.2 },
+  r: { x: 73, y: 50, r: [8, 11.2, 15.7, 22], w: 2.2 },
   o: { x: 50, y: 50, r: [40], w: 2.4 },
-  i: { x: 50, y: 50, r: [8, 11.5, 15, 18.5], w: 2.2 },
-  m: { x: 50, y: 50, r: [8, 12, 16, 20], w: 2.2 },
+  i: { x: 50, y: 50, r: [7, 10, 14, 19.5], w: 2.2 },
+  m: { x: 50, y: 50, r: [7, 10, 14, 20], w: 2.2 },
 };
-const GRID = { 4: { at: [28, 72], r: [9, 13, 17], w: 2 }, 9: { at: [20, 50, 80], r: [6, 8.5, 11], w: 1.6 } };
+const GRID = { 4: { at: [28, 72], r: [7, 11.5, 19], w: 2 }, 9: { at: [20, 50, 80], r: [5, 8, 12.5], w: 1.6 } };
 // The ring of eight round the frame, clockwise from the top left corner, with room for a shape in the middle.
-const RING = { at: [[16, 16], [50, 16], [84, 16], [84, 50], [84, 84], [50, 84], [16, 84], [16, 50]], r: [5, 6.5, 8], w: 1.5 };
+const RING = { at: [[16, 16], [50, 16], [84, 16], [84, 50], [84, 84], [50, 84], [16, 84], [16, 50]], r: [4.5, 6.5, 9.5], w: 1.5 };
 // The strokes of a line figure, by bit: the four sides, both diagonals, the two middle lines, a ring in the centre.
 const STROKES = ['M18 18H82', 'M82 18V82', 'M18 82H82', 'M18 18V82', 'M18 18L82 82', 'M82 18L18 82', 'M50 18V82', 'M18 50H82'];
 
