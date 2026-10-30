@@ -159,8 +159,10 @@ function layoutBoard(root, W, H) {
   W = Math.floor(W); H = Math.floor(H || W);
   // g: between panels; G: on either side of the line that separates the grid from the answers (2 px).
   const g = Math.max(4, Math.round(Math.min(W, H) * 0.016)), G = Math.round(g * 1.8), sep = 2 * G + 2;
-  const under = Math.min((W - 2 * g) / 3, (H - 3 * g - sep) / 5);
-  const beside = Math.min((W - 3 * g - sep) / 5, (H - 2 * g) / 3);
+  // Room at the edges for the frame round a chosen panel.
+  const w = W - 2 * Math.ceil(W * 0.012), h = H - 2 * Math.ceil(W * 0.012);
+  const under = Math.min((w - 2 * g) / 3, (h - 3 * g - sep) / 5);
+  const beside = Math.min((w - 3 * g - sep) / 5, (h - 2 * g) / 3);
   const side = beside > under * 1.04;
   const m = Math.max(20, Math.floor(Math.min(side ? beside : under, 170)));
   root.style.width = W + 'px'; root.style.height = H + 'px';

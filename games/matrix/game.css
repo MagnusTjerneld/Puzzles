@@ -3,7 +3,8 @@ body[data-game="matrix"], body[data-game="mtest"] {
   --mx-paper: #f3f0e7;    /* a panel */
   --mx-gap: #2a2c33;      /* the missing panel, and the backing of the rules pictures */
   --mx-letter: #807b70;   /* the letter on an answer */
-  --mx-sep: #5d6460;      /* the line between the grid and the answers */
+  --mx-sep: #5d6460;
+  --mx-tick: #2f8a45;     /* the tick on the right answer: darker than --good, to stand out on paper */      /* the line between the grid and the answers */
 }
 [data-for="matrix"], [data-for="mtest"] { line-height: 1.2; }
 /* The board fills the stage, upright or sideways; layoutBoard (draw.js) sets the panel size --m and the gaps --g
@@ -39,7 +40,11 @@ body[data-game="matrix"], body[data-game="mtest"] {
 .mx-a.wrong::before { transform: translate(-50%, -50%) rotate(-45deg); }
 .mx-a.flash { box-shadow: 0 0 0 0.7cqw var(--accent); opacity: 1; }
 .mx-a.out.flash { opacity: .45; }
-.mx-a.right { box-shadow: 0 0 0 0.7cqw var(--accent); }
+/* The right answer once it is tapped (and, in a test handed in, when it was the one chosen): green, with a tick. */
+.mx-a.right { background: color-mix(in srgb, var(--mx-paper) 70%, var(--good)); box-shadow: 0 0 0 0.7cqw var(--mx-tick); }
+.mx-a.right svg { opacity: .45; }
+.mx-a.right::after { content: ''; position: absolute; left: 50%; top: 45%; width: 24%; height: 50%; border: solid var(--mx-tick);
+  border-width: 0 calc(var(--m) * .085) calc(var(--m) * .085) 0; border-radius: calc(var(--m) * .03); transform: translate(-50%, -50%) rotate(45deg); }
 .mx-a.nope { animation: mx-nope .35s; }
 @keyframes mx-nope { 20%, 60% { transform: translateX(-4%); } 40%, 80% { transform: translateX(4%); } }
 @media (prefers-reduced-motion: reduce) { .mx-a.nope, [data-for="matrix"].done .mx-gap { animation: none; } }

@@ -57,6 +57,7 @@ function registerExam() {
       b.classList.toggle('chosen', !done && a === i);
       b.classList.toggle('key', done && lv.answer === i);
       b.classList.toggle('wrong', done && a === i && a !== lv.answer);
+      b.classList.toggle('right', done && a === i && a === lv.answer);
       b.setAttribute('aria-label', `Answer ${LETTER[i]}` + (done ? (lv.answer === i ? ', right' : a === i ? ', your answer, wrong' : '') : a === i ? ', chosen' : ''));
     });
   }
