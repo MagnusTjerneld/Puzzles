@@ -9,7 +9,7 @@ const LEVELS = __LEVELS__;
 // pick: the answer in the gap (only ever the right one; a wrong one is crossed out instead).
 // t: a wrong answer or a hint has been used in this attempt. It sticks through Undo, so a star cannot be had by
 // guessing and taking the guess back.
-let ctx, board, root, lv, out, shown, pick, t, bad = false;
+let ctx, board, root, lv, out, shown, pick, t, h = 0, bad = false;
 let flash = new Set(), hintKind = '';
 let clean = store.get('matrix.clean', {});
 
@@ -40,26 +40,36 @@ function tap(i) {
   b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope');
 }
 
-// Hint names the rule that crosses out the most answers still open, and crosses them out (one undo step). With one
-// answer left it points at it.
+// Hint gives the puzzle away a step at a time, and never the answer. The first says where to look (which part, which
+// way) and crosses out two answers that break that rule; the second says the rule in full and crosses out two more.
+// Then two answers are left, and the choice is the player's. A hint never leaves fewer than two answers standing.
+// shown[r]: 1 when rule r has been pointed at, 2 when it has been said in full. h: hints given (one undo step each).
+const HINTS = 2;
 function giveHint() {
   if (pick >= 0) return null;
-  const open = lv.options.map((_, i) => i).filter((i) => !out[i]);
   const right = lv.options[lv.answer];
-  let best = -1, cross = [];
-  lv.rules.forEach((ru, ri) => {
-    if (shown[ri]) return;
-    const k = open.filter((i) => valueOf(lv, lv.options[i], ru) !== valueOf(lv, right, ru));
-    if (k.length > cross.length) { best = ri; cross = k; }
-  });
-  if (best < 0) {
-    flash = new Set([lv.answer]); hintKind = 'answer';
-    return { label: 'Answer', text: `Only ${LETTER[lv.answer]} is left, and it fits every rule.` };
+  const open = lv.options.map((_, i) => i).filter((i) => !out[i] && i !== lv.answer);
+  const room = Math.min(2, open.length - 1);
+  if (!open.length) return { label: 'Hint', text: 'Only one answer is left.' };
+  if (h >= HINTS || room < 1) { hintKind = 'none'; return { label: 'Hint', text: `No more hints: ${open.length + 1} answers are left, and one of them is right.` }; }
+  const breaks = (ri) => open.filter((i) => valueOf(lv, lv.options[i], lv.rules[ri]) !== valueOf(lv, right, lv.rules[ri]));
+  // The second hint says the rule the first pointed at, while it still crosses something out; otherwise the rule
+  // that crosses out the most.
+  let ri = shown.indexOf(1);
+  if (ri < 0 || !breaks(ri).length) {
+    ri = -1;
+    lv.rules.forEach((_, k) => { if (shown[k] !== 2 && (ri < 0 || breaks(k).length > breaks(ri).length)) ri = k; });
   }
-  ctx.change(() => { shown[best] = 1; t = 1; bad = false; for (const i of cross) out[i] = 2; });
-  flash = new Set(cross); hintKind = 'elim';
-  const names = and(cross.map((i) => LETTER[i]));
-  return { label: 'Rule', text: `${ruleText(lv, lv.rules[best])} ${names} ${cross.length > 1 ? 'break' : 'breaks'} it.` };
+  const full = h === 1 || shown[ri] === 1;
+  let cross = breaks(ri).slice(0, room);
+  // A rule that crosses out only one: the other comes from the rest (every wrong answer breaks some rule).
+  const extra = open.filter((i) => !cross.includes(i)).slice(0, room - cross.length);
+  ctx.change(() => { shown[ri] = full ? 2 : 1; h++; t = 1; bad = false; for (const i of cross.concat(extra)) out[i] = 2; });
+  flash = new Set(cross.concat(extra)); hintKind = 'elim';
+  const names = and(cross.map((i) => LETTER[i])), more = extra.length ? ` ${and(extra.map((i) => LETTER[i]))} ${extra.length > 1 ? 'do' : 'does'} not fit either.` : '';
+  return full
+    ? { label: 'Rule', text: `${ruleText(lv, lv.rules[ri])} ${names} ${cross.length > 1 ? 'break' : 'breaks'} it.${more}` }
+    : { label: 'Where to look', text: `${lookText(lv, lv.rules[ri])} ${names} ${cross.length > 1 ? 'do' : 'does'} not fit.${more}` };
 }
 
 function init(c) {
@@ -85,7 +95,7 @@ function rulesHtml() {
       strip('lines', [[[1 | 8]], [[1 | 16]], [[8 | 16]]], 3, 'Two figures laid on top of each other; the line they share cancels out')),
     card('05', 'One try counts', 'A wrong answer is crossed out in red. Solve a level with no wrong answer and no hint for a star.',
       `<svg class="mini" viewBox="0 0 128 96" role="img" aria-label="A star"><rect width="128" height="96" rx="4" style="fill:var(--mx-gap)"/><path transform="translate(64 48) scale(2.2)" d="M0-12l3.5 7.6 8.2.9-6.1 5.6 1.7 8.1L0 6.1l-7.3 4.1 1.7-8.1-6.1-5.6 8.2-.9z" style="fill:var(--accent)"/></svg>`),
-    card('06', 'Stuck? Tap Hint', 'Hint names one rule and crosses out the answers that break it.',
+    card('06', 'Stuck? Tap Hint', 'The first hint says where to look and crosses out two answers; the second says the rule and crosses out two more. The last choice is yours.',
       strip('centre', [[[0, 2, 2]], [[4, 2, 2]], [[0, 2, 4]], [[1, 2, 2]]], 4, 'Four answers, two crossed out', [0, 2])),
   ].join('');
 }
@@ -101,16 +111,16 @@ Puzzles.register({
   badge: (l) => (clean[l.id] ? '★' : ''),
   init,
   load(l) {
-    lv = l; out = new Array(l.options.length).fill(0); shown = new Array(l.rules.length).fill(0); pick = -1; t = 0; bad = false;
+    lv = l; out = new Array(l.options.length).fill(0); shown = new Array(l.rules.length).fill(0); pick = -1; t = 0; h = 0; bad = false;
     flash = new Set(); hintKind = '';
     build();
   },
   render,
   resize: fit,
-  snapshot: () => ({ out: out.slice(), shown: shown.slice(), pick, t }),
-  restore(s) { out = s.out.slice(); shown = s.shown.slice(); pick = s.pick; t = Math.max(t, s.t); bad = false; },
+  snapshot: () => ({ out: out.slice(), shown: shown.slice(), pick, t, h }),
+  restore(s) { out = s.out.slice(); shown = s.shown.slice(); pick = s.pick; h = s.h; t = Math.max(t, s.t); bad = false; },
   // Restart keeps the mark of a wrong answer or hint; restarting a solved level is a new attempt.
-  reset() { if (ctx.finished) t = 0; out = new Array(lv.options.length).fill(0); shown = new Array(lv.rules.length).fill(0); pick = -1; bad = false; },
+  reset() { if (ctx.finished) t = 0; out = new Array(lv.options.length).fill(0); shown = new Array(lv.rules.length).fill(0); pick = -1; h = 0; bad = false; },
   started: () => pick >= 0 || t > 0 || out.some(Boolean),
   // Working out the rule is the whole puzzle and the answer one tap, so the time counts from when the level shows.
   clockOnLoad: true,
@@ -124,12 +134,12 @@ Puzzles.register({
   },
   winNote() {
     if (!t) return '★  No wrong answer, no hint.';
-    const w = out.filter((x) => x === 1).length, h = shown.filter(Boolean).length;
+    const w = out.filter((x) => x === 1).length;
     const said = [w && `${w} wrong ${w > 1 ? 'answers' : 'answer'}`, h && `${h} ${h > 1 ? 'hints' : 'hint'}`].filter(Boolean);
     return (said.length ? cap(and(said)) + '. ' : '') + 'No wrong answer and no hint for a star.';
   },
   status() {
-    const w = out.filter((x) => x === 1).length, h = shown.filter(Boolean).length;
+    const w = out.filter((x) => x === 1).length;
     return { count: `Wrong <b>${w}</b> · Hints <b>${h}</b>`, msg: bad ? 'Not that one.' : 'Pick the missing figure.', bad };
   },
   hint: giveHint,
@@ -140,6 +150,8 @@ Puzzles.register({
     get lv() { return lv; },
     get hint() { return { kind: hintKind, cells: flash }; },
     get wrong() { return out.filter((x) => x === 1).length; },
+    get open() { return lv.options.map((_, i) => i).filter((i) => !out[i]); },
+    get hints() { return h; },
     tap,
   },
 });

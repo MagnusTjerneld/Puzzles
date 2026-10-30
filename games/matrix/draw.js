@@ -191,12 +191,24 @@ const ALONG = { rows: 'along the row', cols: 'down the column', diag: 'down the 
 // Combining rules talk about the first, second and third panel: say which way they are counted.
 const EACH = { rows: '', cols: 'in each column, ', diag: 'on each diagonal down to the right, ', anti: 'on each diagonal down to the left, ' };
 
+// What a rule is about: 'shape', 'left size', 'ring count', 'triangles', ...
+function ruleLabel(lv, ru) {
+  const spec = Engine.LAYOUTS[lv.layout][ru.c], word = (KIND_WORD[spec.kind] || {})[ru.a] || ATTR_WORD[ru.a];
+  return spec.ring ? 'ring ' + word : spec.kind === 'shape' && spec.slot !== 'c' ? SIDE_WORD[spec.slot] + ' ' + word : word;
+}
+// Where a rule is to be found, but not what it says: the first step of a hint.
+const LOOK = {
+  rows: 'along the rows', cols: 'down the columns',
+  diag: 'along the diagonals down to the right, which carry on from the other side of the grid',
+  anti: 'along the diagonals down to the left, which carry on from the other side of the grid',
+};
+const lookText = (lv, ru) => `Look at the ${ruleLabel(lv, ru)}, ${LOOK[ru.d || 'rows']}.`;
+
 // What rule ru says, in words, as a full sentence. Rules run along the rows, or (ru.d) down the columns or the
 // diagonals, which carry on from the other side of the grid.
 function ruleText(lv, ru) {
   const spec = Engine.LAYOUTS[lv.layout][ru.c], a = ru.a, k = ru.k, dir = ru.d || 'rows', cls = Engine.CLASS[a];
-  const word = (KIND_WORD[spec.kind] || {})[a] || ATTR_WORD[a];
-  const label = cap(spec.ring ? 'ring ' + word : spec.kind === 'shape' && spec.slot !== 'c' ? SIDE_WORD[spec.slot] + ' ' + word : word);
+  const label = cap(ruleLabel(lv, ru));
   const line = LINE_WORD[dir], along = ALONG[dir], each = EACH[dir];
   const first = Engine.LINES[dir][0].map((i) => valueOf(lv, lv.cells[i], ru)).sort((x, y) => x - y);
   const steps = (one, many) => ({ up1: `one ${one}`, down1: `one ${many}`, up2: `two ${one}`, down2: `two ${many}` })[k];
