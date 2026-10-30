@@ -128,10 +128,10 @@ function registerExam() {
       fm = l; seed = newSeed(); qs = questions(seed);
       ans = new Array(fm.n).fill(-1); q = 0; phase = 0; confirm = false; shownKey = '';
       clearTimeout(advance);
-      root.style.width = root.style.height = Math.floor(ctx.width()) + 'px';
+      layoutBoard(root, ctx.width(), ctx.height());
     },
     render,
-    resize() { root.style.width = root.style.height = Math.floor(ctx.width()) + 'px'; },
+    resize() { layoutBoard(root, ctx.width(), ctx.height()); },
     snapshot: () => ({ seed, ans: ans.slice(), q, phase }),
     restore(s) {
       if (s.seed !== seed) { seed = s.seed; qs = questions(seed); }
@@ -139,6 +139,7 @@ function registerExam() {
     },
     reset() { ans = new Array(fm.n).fill(-1); q = 0; phase = 0; confirm = false; shownKey = ''; },
     started: () => phase > 0,
+    fill: true,
     solved: () => phase === 2,
     onSolved() {
       history.push({ n: fm.n, right: right(), secs: ctx.secs, at: Date.now() });

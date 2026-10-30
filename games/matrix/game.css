@@ -1,14 +1,15 @@
-/* Matrix: the grid and the eight answers as printed panels, black on paper, on the dark stage. */
+/* Matrix: the grid and the six answers as printed panels, black on paper, on the dark stage. */
 body[data-game="matrix"], body[data-game="mtest"] {
   --mx-paper: #f3f0e7;    /* a panel */
   --mx-gap: #2a2c33;      /* the missing panel, and the backing of the rules pictures */
   --mx-letter: #807b70;   /* the letter on an answer */
 }
 [data-for="matrix"], [data-for="mtest"] { line-height: 1.2; }
-/* The board is a square; sizes are in container units so the board works from 216 px up. Grid 55 + gap 3 +
-   answers 2 x 19 + 2 = 98 of 100. */
-.mx { container-type: inline-size; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.mx-m { width: 55cqw; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.4cqw; }
+/* The board fills the stage, upright or sideways; layoutBoard (draw.js) sets the panel size --m and the gaps --g
+   (between panels) and --G (between the grid and the answers). The answers are under the grid, or beside it (.side). */
+.mx { --m: 18cqw; --g: 1.4cqw; --G: 3cqw; container-type: inline-size; display: grid; align-content: center; justify-content: center; justify-items: center; gap: var(--G); }
+.mx.side { grid-auto-flow: column; align-items: center; }
+.mx-m { width: calc(3 * var(--m) + 2 * var(--g)); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--g); }
 .mx-c { aspect-ratio: 1; background: var(--mx-paper); border-radius: 1.2cqw; overflow: hidden; }
 .mx-c svg, .mx-a svg { display: block; width: 100%; height: 100%; }
 .mx-gap { background: var(--mx-gap); outline: 0.5cqw dashed color-mix(in srgb, var(--accent) 70%, transparent); outline-offset: -0.9cqw; display: grid; place-items: center; }
@@ -17,7 +18,8 @@ body[data-game="matrix"], body[data-game="mtest"] {
 [data-for="matrix"].done .mx-gap { animation: mx-glow 1.2s ease-out; }
 @keyframes mx-glow { 0% { box-shadow: 0 0 0 0.7cqw var(--accent), 0 0 0 0 var(--accent); } 100% { box-shadow: 0 0 0 0.7cqw var(--accent), 0 0 0 3cqw transparent; } }
 
-.mx-o { margin-top: 3cqw; display: grid; grid-template-columns: repeat(4, 19cqw); gap: 2cqw; }
+.mx-o { display: grid; grid-template-columns: repeat(3, var(--m)); gap: var(--g); }
+.mx.side .mx-o { grid-template-columns: repeat(2, var(--m)); }
 .mx-a { position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 1.2cqw; background: var(--mx-paper); overflow: hidden;
   -webkit-tap-highlight-color: transparent; transition: transform .12s, opacity .2s; }
 .mx-a:active { transform: scale(.96); }

@@ -1,12 +1,13 @@
-// Matrix: the engine. A level is a 3 x 3 matrix of panels with the last one missing, and eight answers to choose
+// Matrix: the engine. A level is a 3 x 3 matrix of panels with the last one missing, and six answers to choose
 // from, in the style of the matrix tests (Raven's progressive matrices) used to admit members to high-IQ societies.
 // Every panel is built from components (one shape, two shapes, a grid of shapes, a figure of lines, an arrow, ...),
 // and every attribute of a component (shape, size, shade, count, places, lines, direction, ...) follows a rule
 // along the rows, down the columns or along the diagonals.
 //
 // The answers are made the way I-RAVEN makes them: three attributes of the right answer are each given one wrong
-// value, and the eight answers are every combination of right and wrong. So every wrong value shows up in exactly
-// half of the answers and the right answer cannot be spotted by counting which values are most common.
+// value, and the answers are the combinations of right and wrong: six of the eight, leaving out a pair of opposites.
+// So every wrong value shows up in exactly half of the answers and the right answer cannot be spotted by counting
+// which values are most common.
 //
 // accepts() is the judge: an answer is accepted when every attribute is explained by some rule in the catalogue,
 // along some direction. A level is only kept when the right answer is the one answer accepted, which is what
@@ -479,7 +480,7 @@ function generateLevel({ seed, layout, vary, kinds, dirs: share = {} }) {
   comps.forEach((c, ci) => c.rules.forEach((ru) => rules.push(Object.assign({ c: ci }, ru))));
   if (!accepts(layout, cells, answer)) return null;
 
-  // ---------- The eight answers ----------
+  // ---------- The six answers ----------
   // Splits: an attribute of the answer and a wrong value for it. Varying attributes first; a whole pattern (places,
   // lines, a post, a bow, a row of items) can be split more than once, by small changes on top of each other.
   const cands = [];
@@ -531,17 +532,20 @@ function generateLevel({ seed, layout, vary, kinds, dirs: share = {} }) {
       }
     }
     if (splits.length < 3) return null;
-    const options = range(0, 7).map((m) => {
+    // The eight combinations of right and wrong, less a pair of opposites (the first split alone and the other two
+    // together, say): six answers, as on the real test, still with every wrong value in half of them.
+    const drop = 1 << int(r, 0, 2);
+    const options = range(0, 7).filter((m) => m !== drop && m !== (7 ^ drop)).map((m) => {
       const o = answer.map((v) => v.slice());
       splits.forEach((s, j) => { if (m >> j & 1) o[s.c] = s.f(o[s.c]); });
       return o;
     });
     const keys = new Set(options.map((o) => JSON.stringify(o)));
-    if (keys.size !== 8) continue;
+    if (keys.size !== 6) continue;
     if (options.some((o) => o.some((v, ci) => !shows(specs[ci], v)))) continue;
     if (options.slice(1).some((o) => accepts(layout, cells, o))) continue;
     // Shuffle the answers; the right one is options[0] before the shuffle.
-    const order = shuffle(r, range(0, 7));
+    const order = shuffle(r, range(0, 5));
     const score = BASE[layout] + rules.reduce((t, ru) => t + weight(ru) + (ru.d && ru.k !== 'const' ? DIR_WEIGHT[ru.d] : 0), 0);
     return { layout, score: Math.round(score * 10) / 10, cells, options: order.map((i) => options[i]), answer: order.indexOf(0), rules };
   }

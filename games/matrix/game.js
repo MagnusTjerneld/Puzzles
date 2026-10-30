@@ -1,4 +1,4 @@
-// Matrix: a 3 x 3 matrix of figures with the last one missing; pick the one of eight answers that completes it.
+// Matrix: a 3 x 3 matrix of figures with the last one missing; pick the one of six answers that completes it.
 // Every row follows the same rules. Runs inside the Puzzles shell (src/shell/shell.js). Engine is
 // games/matrix/engine.js: the layouts, the rules and the judge the levels were generated with. The drawing and the
 // words are in draw.js, shared with Matrix Test (exam.js), which this file registers after Matrix.
@@ -17,10 +17,7 @@ function build() {
   root.innerHTML = boardHtml(lv);
   fit();
 }
-function fit() {
-  const W = Math.floor(ctx.width());
-  root.style.width = root.style.height = W + 'px';
-}
+function fit() { layoutBoard(root, ctx.width(), ctx.height()); }
 
 function render() {
   const gap = root.querySelector('.mx-gap');
@@ -47,7 +44,7 @@ function tap(i) {
 // answer left it points at it.
 function giveHint() {
   if (pick >= 0) return null;
-  const open = [0, 1, 2, 3, 4, 5, 6, 7].filter((i) => !out[i]);
+  const open = lv.options.map((_, i) => i).filter((i) => !out[i]);
   const right = lv.options[lv.answer];
   let best = -1, cross = [];
   lv.rules.forEach((ru, ri) => {
@@ -104,7 +101,7 @@ Puzzles.register({
   badge: (l) => (clean[l.id] ? '★' : ''),
   init,
   load(l) {
-    lv = l; out = new Array(8).fill(0); shown = new Array(l.rules.length).fill(0); pick = -1; t = 0; bad = false;
+    lv = l; out = new Array(l.options.length).fill(0); shown = new Array(l.rules.length).fill(0); pick = -1; t = 0; bad = false;
     flash = new Set(); hintKind = '';
     build();
   },
@@ -113,10 +110,12 @@ Puzzles.register({
   snapshot: () => ({ out: out.slice(), shown: shown.slice(), pick, t }),
   restore(s) { out = s.out.slice(); shown = s.shown.slice(); pick = s.pick; t = Math.max(t, s.t); bad = false; },
   // Restart keeps the mark of a wrong answer or hint; restarting a solved level is a new attempt.
-  reset() { if (ctx.finished) t = 0; out = new Array(8).fill(0); shown = new Array(lv.rules.length).fill(0); pick = -1; bad = false; },
+  reset() { if (ctx.finished) t = 0; out = new Array(lv.options.length).fill(0); shown = new Array(lv.rules.length).fill(0); pick = -1; bad = false; },
   started: () => pick >= 0 || t > 0 || out.some(Boolean),
   // Working out the rule is the whole puzzle and the answer one tap, so the time counts from when the level shows.
   clockOnLoad: true,
+  // The grid and the answers use the whole height of an upright phone, not only a square.
+  fill: true,
   solved: () => pick === lv.answer,
   onSolved() {
     if (t) return;

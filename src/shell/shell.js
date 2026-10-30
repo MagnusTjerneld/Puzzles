@@ -26,6 +26,9 @@
 //   badge(level)                 a short text under the level's number in the picker (e.g. stars)
 //   onSolved()                   called once when a level becomes solved, before the status row is drawn
 //   winNote()                    a line under "Solved in ..." (e.g. stars and the optimum)
+//   fill                         true: the stage takes all the height the page leaves (in a phone held upright) or a
+//                                wider box (held sideways), instead of a square; the game reads ctx.height() and lays
+//                                itself out to the shape, and resize() is called whenever the stage changes size
 //   clockOnLoad                  true: the clock starts when the level is shown, not at the first move (a puzzle that is
 //                                all thinking and one tap, like Matrix)
 // A game that is a test rather than a puzzle (Matrix Test) can take over more of the frame:
@@ -81,8 +84,9 @@ const Puzzles = (() => {
     $('stage').insertBefore(board, $('picker'));
     return {
       board,
-      // Width available for the board, in CSS pixels.
-      width: () => Math.min($('stage').clientWidth, 560),
+      // Width available for the board, in CSS pixels; and the height, for a game with fill.
+      width: () => (g.fill ? $('stage').clientWidth : Math.min($('stage').clientWidth, 560)),
+      height: () => $('stage').clientHeight,
       // Change the state through fn, as one undo step.
       change(fn) { const s = g.snapshot(); fn(); commit(s); },
       // The state has already changed in place (a drag); s is the snapshot from before it.
@@ -229,6 +233,7 @@ const Puzzles = (() => {
       if (game) leave();
       game = g;
       document.body.dataset.game = g.id;
+      $('app').classList.toggle('fill', !!g.fill);
       document.body.style.setProperty('--accent', g.accent);
       if (!g.ctx) { g.ctx = makeCtx(g); g.init(g.ctx); }
       g.ctx.board.hidden = false;
@@ -322,6 +327,8 @@ const Puzzles = (() => {
     update();
   };
   window.addEventListener('resize', () => { if (game && lv) game.resize(); });
+  // A stage that fills the page changes size without the window doing so: the hint text comes and goes.
+  if (window.ResizeObserver) new ResizeObserver(() => { if (game && game.fill && lv) game.resize(); }).observe($('stage'));
 
   // ---------- Level picker ----------
   function openPicker() {

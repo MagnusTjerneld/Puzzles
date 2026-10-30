@@ -152,6 +152,20 @@ function boardHtml(lv) {
     + '<div class="mx-o">' + lv.options.map((p, i) => `<button type="button" class="mx-a" data-i="${i}">${panelSvg(L, p)}<span class="mx-l">${LETTER[i]}</span></button>`).join('') + '</div>';
 }
 
+// Lays the grid and the answers out on a board of W x H, the panels as large as it allows: the answers under the
+// grid (three by two) or beside it (two by three), whichever gives larger panels. Every panel is the same size.
+function layoutBoard(root, W, H) {
+  W = Math.floor(W); H = Math.floor(H || W);
+  const g = Math.max(4, Math.round(Math.min(W, H) * 0.016)), G = Math.round(g * 2.4);
+  const under = Math.min((W - 2 * g) / 3, (H - 3 * g - G) / 5);
+  const beside = Math.min((W - 3 * g - G) / 5, (H - 2 * g) / 3);
+  const side = beside > under * 1.04;
+  const m = Math.max(20, Math.floor(Math.min(side ? beside : under, 170)));
+  root.style.width = W + 'px'; root.style.height = H + 'px';
+  root.classList.toggle('side', side);
+  root.style.setProperty('--m', m + 'px'); root.style.setProperty('--g', g + 'px'); root.style.setProperty('--G', G + 'px');
+}
+
 // ---------- Words ----------
 const ATTR_WORD = { t: 'shape', s: 'size', c: 'shade', n: 'count', p: 'places', l: 'lines', r: 'shapes', z: 'dots and squares', f: 'triangles' };
 // Names that depend on the kind of figure.

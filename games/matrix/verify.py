@@ -1,5 +1,5 @@
-# Independent check of levels.json: no two levels follow the same pattern of rules, the values are in range, the eight answers differ, the stored rules hold along
-# their lines with the right answer in place, and the right answer is the only one of the eight that every attribute
+# Independent check of levels.json: no two levels follow the same pattern of rules, the values are in range, the six answers differ, the stored rules hold along
+# their lines with the right answer in place, and the right answer is the only one of the six that every attribute
 # accepts (explained by a rule along the rows, down the columns or along a diagonal, or left free by the matrix).
 # Turns, the bar turned over, folds and the diagonals are worked out here from the geometry (coordinates), not
 # copied from engine.js.
@@ -227,13 +227,21 @@ def check(levels):
     for lv in levels:
         errs = []
         layout, cells, options, ans = lv['layout'], lv['cells'], lv['options'], lv['answer']
-        if layout not in LAYOUTS or len(cells) != 8 or len(options) != 8 or not (0 <= ans < 8):
+        if layout not in LAYOUTS or len(cells) != 8 or len(options) != 6 or not (0 <= ans < 6):
             errs.append('wrong shape of level')
         elif not all(in_range(layout, p) for p in cells + options):
             errs.append('value out of range')
         else:
-            if len({json.dumps(o) for o in options}) != 8:
+            if len({json.dumps(o) for o in options}) != 6:
                 errs.append('two answers are the same')
+            # Counting must not find the answer: for no attribute is the right answer's value more common among the
+            # six than every other value.
+            for ci, (kind, _) in enumerate(LAYOUTS[layout]):
+                for a in ATTRS[kind]:
+                    vals = [value(kind, o[ci], a) for o in options]
+                    right = vals.count(vals[ans])
+                    if all(right > vals.count(x) for x in set(vals) if x != vals[ans]) and len(set(vals)) > 1:
+                        errs.append(f'the right {a} is the most common')
             grid = cells + [options[ans]]
             for r in lv['rules']:
                 kind = LAYOUTS[layout][r['c']][0]
