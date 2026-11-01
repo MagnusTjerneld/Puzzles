@@ -50,6 +50,8 @@ h1, .clock { flex: 1 1 0; } /* equal columns: the clock stays put whatever the l
 @media (max-width: 374px) { header { gap: 6px; } header .pill { padding-inline: 12px; } header .icon-btn { width: 36px; padding-inline: 0; } }
 
 .stage { position: relative; width: 100%; }
+/* A game with fill (Matrix) takes all the height the column leaves, and lays itself out to the stage's shape. */
+.app.fill .stage { flex: 1 1 0; min-height: 0; }
 .status { min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .count { font: 400 13px var(--mono); color: var(--muted); letter-spacing: .03em; text-transform: uppercase; white-space: nowrap; }
 .count b { color: var(--fg); font-weight: 500; }
@@ -146,6 +148,7 @@ h1, .clock { flex: 1 1 0; } /* equal columns: the clock stays put whatever the l
   body { padding-top: max(10px, env(safe-area-inset-top)); padding-bottom: max(10px, env(safe-area-inset-bottom)); }
   .app { width: min(100%, 1000px); display: grid; grid-template-columns: auto minmax(300px, 1fr); grid-template-rows: auto auto auto 1fr auto; column-gap: 20px; row-gap: 12px; align-items: start; }
   .stage { grid-column: 1; grid-row: 1 / -1; width: min(calc(100dvh - max(10px, env(safe-area-inset-top)) - max(10px, env(safe-area-inset-bottom))), calc(100vw - 32px - 320px)); }
+  .app.fill .stage { width: min(calc(100vw - 32px - 340px), 760px); height: calc(100dvh - max(10px, env(safe-area-inset-top)) - max(10px, env(safe-area-inset-bottom))); }
   .app > header { grid-column: 2; grid-row: 1; gap: 6px; }
   header .pill { padding-inline: 12px; } header .icon-btn { width: 36px; padding-inline: 0; }
   .status { grid-column: 2; grid-row: 2; min-height: 0; flex-wrap: wrap; }

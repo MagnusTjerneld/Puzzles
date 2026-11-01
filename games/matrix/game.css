@@ -1,14 +1,18 @@
-/* Matrix: the grid and the eight answers as printed panels, black on paper, on the dark stage. */
+/* Matrix: the grid and the six answers as printed panels, black on paper, on the dark stage. */
 body[data-game="matrix"], body[data-game="mtest"] {
   --mx-paper: #f3f0e7;    /* a panel */
   --mx-gap: #2a2c33;      /* the missing panel, and the backing of the rules pictures */
   --mx-letter: #807b70;   /* the letter on an answer */
+  --mx-sep: #5d6460;
+  --mx-tick: #2f8a45;     /* the tick on the right answer: darker than --good, to stand out on paper */
+  --mx-cross: #d23f34;    /* the cross on a wrong answer, as dark against the paper as the tick */      /* the line between the grid and the answers */
 }
 [data-for="matrix"], [data-for="mtest"] { line-height: 1.2; }
-/* The board is a square; sizes are in container units so the board works from 216 px up. Grid 55 + gap 3 +
-   answers 2 x 19 + 2 = 98 of 100. */
-.mx { container-type: inline-size; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.mx-m { width: 55cqw; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.4cqw; }
+/* The board fills the stage, upright or sideways; layoutBoard (draw.js) sets the panel size --m and the gaps --g
+   (between panels) and --G (either side of the line between the grid and the answers). The answers are under the grid, or beside it (.side). */
+.mx { --m: 18cqw; --g: 1.4cqw; --G: 3cqw; container-type: inline-size; display: grid; align-content: center; justify-content: center; justify-items: center; gap: var(--G); }
+.mx.side { grid-auto-flow: column; align-items: center; }
+.mx-m { width: calc(3 * var(--m) + 2 * var(--g)); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--g); }
 .mx-c { aspect-ratio: 1; background: var(--mx-paper); border-radius: 1.2cqw; overflow: hidden; }
 .mx-c svg, .mx-a svg { display: block; width: 100%; height: 100%; }
 .mx-gap { background: var(--mx-gap); outline: 0.5cqw dashed color-mix(in srgb, var(--accent) 70%, transparent); outline-offset: -0.9cqw; display: grid; place-items: center; }
@@ -17,7 +21,11 @@ body[data-game="matrix"], body[data-game="mtest"] {
 [data-for="matrix"].done .mx-gap { animation: mx-glow 1.2s ease-out; }
 @keyframes mx-glow { 0% { box-shadow: 0 0 0 0.7cqw var(--accent), 0 0 0 0 var(--accent); } 100% { box-shadow: 0 0 0 0.7cqw var(--accent), 0 0 0 3cqw transparent; } }
 
-.mx-o { margin-top: 3cqw; display: grid; grid-template-columns: repeat(4, 19cqw); gap: 2cqw; }
+/* The line between the grid and the answers: across under the grid, or down beside it. */
+.mx-sep { width: calc(3 * var(--m) + 2 * var(--g)); height: 2px; border-radius: 1px; background: var(--mx-sep); }
+.mx.side .mx-sep { width: 2px; height: calc(3 * var(--m) + 2 * var(--g)); }
+.mx-o { display: grid; grid-template-columns: repeat(3, var(--m)); gap: var(--g); }
+.mx.side .mx-o { grid-template-columns: repeat(2, var(--m)); }
 .mx-a { position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 1.2cqw; background: var(--mx-paper); overflow: hidden;
   -webkit-tap-highlight-color: transparent; transition: transform .12s, opacity .2s; }
 .mx-a:active { transform: scale(.96); }
@@ -27,13 +35,18 @@ body[data-game="matrix"], body[data-game="mtest"] {
 .mx-a.out { opacity: .3; }
 .mx-a.out::after, .mx-a.wrong::after, .mx-a.wrong::before { content: ''; position: absolute; left: 50%; top: 50%; width: 120%; height: 1.2cqw; border-radius: 1cqw; transform: translate(-50%, -50%) rotate(45deg); }
 .mx-a.out::after { background: var(--ink); }
-.mx-a.wrong { background: color-mix(in srgb, var(--mx-paper) 70%, var(--bad)); }
+.mx-a.wrong { background: color-mix(in srgb, var(--mx-paper) 70%, var(--bad)); box-shadow: 0 0 0 0.7cqw var(--mx-cross); }
 .mx-a.wrong svg { opacity: .45; }
-.mx-a.wrong::after, .mx-a.wrong::before { background: var(--bad); }
+/* The cross is drawn like the tick on a right answer: about half the panel, the same thick stroke. */
+.mx-a.wrong::after, .mx-a.wrong::before { background: var(--mx-cross); width: 78%; height: calc(var(--m) * .085); border-radius: calc(var(--m) * .045); }
 .mx-a.wrong::before { transform: translate(-50%, -50%) rotate(-45deg); }
 .mx-a.flash { box-shadow: 0 0 0 0.7cqw var(--accent); opacity: 1; }
 .mx-a.out.flash { opacity: .45; }
-.mx-a.right { box-shadow: 0 0 0 0.7cqw var(--accent); }
+/* The right answer once it is tapped (and, in a test handed in, when it was the one chosen): green, with a tick. */
+.mx-a.right { background: color-mix(in srgb, var(--mx-paper) 70%, var(--good)); box-shadow: 0 0 0 0.7cqw var(--mx-tick); }
+.mx-a.right svg { opacity: .45; }
+.mx-a.right::after { content: ''; position: absolute; left: 50%; top: 45%; width: 24%; height: 50%; border: solid var(--mx-tick);
+  border-width: 0 calc(var(--m) * .085) calc(var(--m) * .085) 0; border-radius: calc(var(--m) * .03); transform: translate(-50%, -50%) rotate(45deg); }
 .mx-a.nope { animation: mx-nope .35s; }
 @keyframes mx-nope { 20%, 60% { transform: translateX(-4%); } 40%, 80% { transform: translateX(4%); } }
 @media (prefers-reduced-motion: reduce) { .mx-a.nope, [data-for="matrix"].done .mx-gap { animation: none; } }

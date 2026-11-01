@@ -15,7 +15,7 @@
 //   resize()                     the stage changed size
 //   snapshot() / restore(s)      opaque copies of the state, for undo and redo
 //   reset()                      back to the start state
-//   started()                    has the player changed anything? (starts the clock)
+//   started()                    has the player changed anything? (starts the clock of a test, see limit())
 //   solved()
 //   status()                     { count: html, msg: text, bad: bool } for the status row while playing
 //   hint()                       sets the game's own highlight and returns { text, label? }, or null; label defaults to "Why"
@@ -26,10 +26,14 @@
 //   badge(level)                 a short text under the level's number in the picker (e.g. stars)
 //   onSolved()                   called once when a level becomes solved, before the status row is drawn
 //   winNote()                    a line under "Solved in ..." (e.g. stars and the optimum)
+//   fill                         true: the stage takes all the height the page leaves (in a phone held upright) or a
+//                                wider box (held sideways), instead of a square; the game reads ctx.height() and lays
+//                                itself out to the shape, and resize() is called whenever the stage changes size
 // A game that is a test rather than a puzzle (Matrix Test) can take over more of the frame:
 //   heading(level)               the big line in the header instead of "Level N"
 //   bestText(level)              the small line under the clock instead of "Best mm:ss"
-//   limit(level)                 seconds allowed: the clock counts down, and timeUp() is called once it reaches zero
+//   limit(level)                 seconds allowed: the clock counts down, and timeUp() is called once it reaches zero;
+//                                it starts only once started() is true (the player pressed Start), not when shown
 //   controls()                   [{ id, label, primary?, disabled? }] in place of Undo, Redo, Hint and Restart;
 //                                press(id) is called on a tap. Asked again after every change.
 //   explain()                    { label, text } for the hint box while no hint shows, or null
@@ -79,8 +83,9 @@ const Puzzles = (() => {
     $('stage').insertBefore(board, $('picker'));
     return {
       board,
-      // Width available for the board, in CSS pixels.
-      width: () => Math.min($('stage').clientWidth, 560),
+      // Width available for the board, in CSS pixels; and the height, for a game with fill.
+      width: () => (g.fill ? $('stage').clientWidth : Math.min($('stage').clientWidth, 560)),
+      height: () => $('stage').clientHeight,
       // Change the state through fn, as one undo step.
       change(fn) { const s = g.snapshot(); fn(); commit(s); },
       // The state has already changed in place (a drag); s is the snapshot from before it.
@@ -101,7 +106,7 @@ const Puzzles = (() => {
   // that is solved or untouched.
   function savePlay() {
     if (!game || !lv) return;
-    if (finished || (!game.started() && !undoSt.length && !redoSt.length)) { try { localStorage.removeItem(key('play')); } catch (e) {} return; }
+    if (finished || (!game.started() && !undoSt.length && !redoSt.length && !(secs && !game.limit))) { try { localStorage.removeItem(key('play')); } catch (e) {} return; }
     store.set(key('play'), { lv: lv.id, s: game.snapshot(), undo: undoSt, redo: redoSt, secs, ticking });
   }
   // Same arrays of the same lengths and objects with the same keys: a saved board that still fits the level.
@@ -227,6 +232,7 @@ const Puzzles = (() => {
       if (game) leave();
       game = g;
       document.body.dataset.game = g.id;
+      $('app').classList.toggle('fill', !!g.fill);
       document.body.style.setProperty('--accent', g.accent);
       if (!g.ctx) { g.ctx = makeCtx(g); g.init(g.ctx); }
       g.ctx.board.hidden = false;
@@ -320,6 +326,8 @@ const Puzzles = (() => {
     update();
   };
   window.addEventListener('resize', () => { if (game && lv) game.resize(); });
+  // A stage that fills the page changes size without the window doing so: the hint text comes and goes.
+  if (window.ResizeObserver) new ResizeObserver(() => { if (game && game.fill && lv) game.resize(); }).observe($('stage'));
 
   // ---------- Level picker ----------
   function openPicker() {
@@ -378,11 +386,12 @@ const Puzzles = (() => {
     if (!$('rules').hidden) closeRules(); else if (!$('picker').hidden) closePicker();
   });
 
-  // The clock runs while a level is being played and nothing covers it. It starts at the first move and then keeps
-  // running, also when Restart or Undo takes the board back to its start.
+  // The clock runs while a level is being played and nothing covers it. It starts as soon as the level is shown (the
+  // thinking before the first move counts), a test's countdown once the test is started, and then keeps running, also
+  // when Restart or Undo takes the board back to its start.
   setInterval(() => {
     if (!game || finished || document.hidden || hubShowing() || !$('picker').hidden || !$('rules').hidden) return;
-    if (!ticking && !game.started()) return;
+    if (!ticking && game.limit && !game.started()) return;
     ticking = true;
     secs++; showClock();
     const lim = game.limit ? game.limit(lv) : 0;

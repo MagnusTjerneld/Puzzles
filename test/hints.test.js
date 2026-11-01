@@ -33,12 +33,19 @@ const GAMES = {
     done: `(P, g) => (g.dbg.moves === g.dbg.lv.opt ? null : 'took ' + g.dbg.moves + ' pours, the optimum is ' + g.dbg.lv.opt)`,
   },
   matrix: {
-    // Each hint names a rule and crosses out answers; it must never cross out the right one. The last points at it.
+    // A hint crosses out two answers (never the right one) and leaves at least two standing; after two hints there are
+    // no more and exactly two answers are left. Then the player picks: the test taps the right one.
     step: `(P, g) => {
-      const h = g.dbg.hint, a = g.dbg.lv.answer;
-      if (h.kind === 'elim') { if (!h.cells.size) return 'nothing crossed out'; if (h.cells.has(a)) return 'crossed out the right answer'; return; }
-      if (h.kind !== 'answer') return 'unexpected ' + h.kind;
-      if (h.cells.size !== 1 || !h.cells.has(a)) return 'pointed at a wrong answer';
+      const h = g.dbg.hint, a = g.dbg.lv.answer, open = g.dbg.open;
+      if (h.kind === 'elim') {
+        if (h.cells.size !== 2) return 'crossed out ' + h.cells.size + ', not two';
+        if (h.cells.has(a)) return 'crossed out the right answer';
+        if (open.length < 2) return 'left fewer than two answers';
+        return;
+      }
+      if (h.kind !== 'none') return 'unexpected ' + h.kind;
+      if (g.dbg.hints !== 2) return 'stopped after ' + g.dbg.hints + ' hints';
+      if (open.length !== 2 || !open.includes(a)) return 'left ' + open.length + ' answers';
       g.dbg.tap(a);
     }`,
     done: `(P, g) => (g.dbg.wrong === 0 ? null : 'a wrong answer was counted')`,

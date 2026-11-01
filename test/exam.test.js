@@ -48,7 +48,7 @@ const launch = require('../scripts/browser');
   await press('new');
   check(seed1 !== (await p.evaluate(() => JSON.stringify(Puzzles.debug.game.dbg.qs[0]))), 'New test gives the same questions');
   await press('start');
-  await p.evaluate(() => { const g = Puzzles.debug.game.dbg; g.choose(g.qs[0].answer, 0); g.choose(g.qs[1].answer, 1); g.choose((g.qs[2].answer + 1) % 8, 2); });
+  await p.evaluate(() => { const g = Puzzles.debug.game.dbg; g.choose(g.qs[0].answer, 0); g.choose(g.qs[1].answer, 1); g.choose((g.qs[2].answer + 1) % 6, 2); });
   await press('hand');
   s = await st();
   check(!s.finished && s.explain.includes('22 questions have no answer'), 'Hand in with blanks does not ask: ' + s.explain);
