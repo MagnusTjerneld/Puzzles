@@ -15,7 +15,7 @@
 //   resize()                     the stage changed size
 //   snapshot() / restore(s)      opaque copies of the state, for undo and redo
 //   reset()                      back to the start state
-//   started()                    has the player changed anything? (starts the clock, unless clockOnLoad)
+//   started()                    has the player changed anything? (starts the clock of a test, see limit())
 //   solved()
 //   status()                     { count: html, msg: text, bad: bool } for the status row while playing
 //   hint()                       sets the game's own highlight and returns { text, label? }, or null; label defaults to "Why"
@@ -29,12 +29,11 @@
 //   fill                         true: the stage takes all the height the page leaves (in a phone held upright) or a
 //                                wider box (held sideways), instead of a square; the game reads ctx.height() and lays
 //                                itself out to the shape, and resize() is called whenever the stage changes size
-//   clockOnLoad                  true: the clock starts when the level is shown, not at the first move (a puzzle that is
-//                                all thinking and one tap, like Matrix)
 // A game that is a test rather than a puzzle (Matrix Test) can take over more of the frame:
 //   heading(level)               the big line in the header instead of "Level N"
 //   bestText(level)              the small line under the clock instead of "Best mm:ss"
-//   limit(level)                 seconds allowed: the clock counts down, and timeUp() is called once it reaches zero
+//   limit(level)                 seconds allowed: the clock counts down, and timeUp() is called once it reaches zero;
+//                                it starts only once started() is true (the player pressed Start), not when shown
 //   controls()                   [{ id, label, primary?, disabled? }] in place of Undo, Redo, Hint and Restart;
 //                                press(id) is called on a tap. Asked again after every change.
 //   explain()                    { label, text } for the hint box while no hint shows, or null
@@ -107,7 +106,7 @@ const Puzzles = (() => {
   // that is solved or untouched.
   function savePlay() {
     if (!game || !lv) return;
-    if (finished || (!game.started() && !undoSt.length && !redoSt.length && !(game.clockOnLoad && secs))) { try { localStorage.removeItem(key('play')); } catch (e) {} return; }
+    if (finished || (!game.started() && !undoSt.length && !redoSt.length && !(secs && !game.limit))) { try { localStorage.removeItem(key('play')); } catch (e) {} return; }
     store.set(key('play'), { lv: lv.id, s: game.snapshot(), undo: undoSt, redo: redoSt, secs, ticking });
   }
   // Same arrays of the same lengths and objects with the same keys: a saved board that still fits the level.
@@ -387,12 +386,12 @@ const Puzzles = (() => {
     if (!$('rules').hidden) closeRules(); else if (!$('picker').hidden) closePicker();
   });
 
-  // The clock runs while a level is being played and nothing covers it. It starts at the first move (or when the level
-  // is shown, for a game with clockOnLoad) and then keeps running, also when Restart or Undo takes the board back to
-  // its start.
+  // The clock runs while a level is being played and nothing covers it. It starts as soon as the level is shown (the
+  // thinking before the first move counts), a test's countdown once the test is started, and then keeps running, also
+  // when Restart or Undo takes the board back to its start.
   setInterval(() => {
     if (!game || finished || document.hidden || hubShowing() || !$('picker').hidden || !$('rules').hidden) return;
-    if (!ticking && !game.started() && !game.clockOnLoad) return;
+    if (!ticking && game.limit && !game.started()) return;
     ticking = true;
     secs++; showClock();
     const lim = game.limit ? game.limit(lv) : 0;

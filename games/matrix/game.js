@@ -122,8 +122,6 @@ Puzzles.register({
   // Restart keeps the mark of a wrong answer or hint; restarting a solved level is a new attempt.
   reset() { if (ctx.finished) t = 0; out = new Array(lv.options.length).fill(0); shown = new Array(lv.rules.length).fill(0); pick = -1; h = 0; bad = false; },
   started: () => pick >= 0 || t > 0 || out.some(Boolean),
-  // Working out the rule is the whole puzzle and the answer one tap, so the time counts from when the level shows.
-  clockOnLoad: true,
   // The grid and the answers use the whole height of an upright phone, not only a square.
   fill: true,
   solved: () => pick === lv.answer,
